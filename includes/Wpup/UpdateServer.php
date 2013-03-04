@@ -24,6 +24,11 @@ class Wpup_UpdateServer {
 		$this->cache = new Wpup_FileCache($serverDirectory . '/cache');
 	}
 
+	/**
+	 * Process an update API request.
+	 *
+	 * @param array|null $query Query parameters. Defaults to the current request parameters (GET + POST).
+	 */
 	public function handleRequest($query = null) {
 		$this->startTime = microtime(true);
 		if ( $query === null ) {
@@ -36,6 +41,12 @@ class Wpup_UpdateServer {
 		exit;
 	}
 
+	/**
+	 * Parse an API request and perform some basic validation.
+	 *
+	 * @param array $query
+	 * @return Wpup_Request
+	 */
 	protected function initRequest($query) {
 		$action = isset($query['action']) ? strval($query['action']) : '';
 		if ( $action === '' ) {
@@ -63,6 +74,11 @@ class Wpup_UpdateServer {
 		return new Wpup_Request($query, $action, $slug, $package);
 	}
 
+	/**
+	 * Run the requested action.
+	 *
+	 * @param Wpup_Request $request
+	 */
 	protected function dispatch($request) {
 		if ( $request->action === 'get_metadata' ) {
 			$this->actionGetMetadata($request);
@@ -73,10 +89,15 @@ class Wpup_UpdateServer {
 		}
 	}
 
+	/**
+	 * Retrieve package metadata as JSON. This is the primary function of the custom update API.
+	 *
+	 * @param Wpup_Request $request
+	 */
 	protected function actionGetMetadata(Wpup_Request $request) {
 		$meta = $request->package->getMetadata();
-
 		$meta['download_url'] = $this->generateDownloadUrl($request->package);
+
 		$meta = $this->filterMetadata($meta, $request);
 
 		//For debugging. The update checker ignores unknown fields, so this is safe.
@@ -94,7 +115,7 @@ class Wpup_UpdateServer {
 	 *
 	 * @param array $meta
 	 * @param Wpup_Request $request
-	 * @return array
+	 * @return array Filtered metadata.
 	 */
 	protected function filterMetadata($meta, $request) {
 		//By convention, un-set properties are omitted.
@@ -104,6 +125,15 @@ class Wpup_UpdateServer {
 		return $meta;
 	}
 
+	/**
+	 * Process a download request.
+	 *
+	 * Typically this occurs when a user attempts to install a plugin/theme update
+	 * from the WordPress dashboard, but technically they could also download and
+	 * install it manually.
+	 *
+	 * @param Wpup_Request $request
+	 */
 	protected function actionDownload(Wpup_Request $request) {
 		//Required for IE, otherwise Content-Disposition may be ignored.
 		if(ini_get('zlib.output_compression')) {
@@ -137,7 +167,8 @@ class Wpup_UpdateServer {
 	}
 
 	/**
-	 * Stub. You can override this in a subclass.
+	 * Stub. You can override this in a subclass to show update info only to
+	 * users with a valid license key (for example).
 	 *
 	 * @param $request
 	 */
@@ -180,8 +211,53 @@ class Wpup_UpdateServer {
 	 * @param int $httpStatus Optional HTTP status code. Defaults to 500 (Internal Server Error).
 	 */
 	protected function exitWithError($message, $httpStatus = 500) {
-		header('X-Ws-Update-Server-Error: ' . $httpStatus, true, $httpStatus);
-		echo $message;
+		$statusMessages = array(
+			// This is not a full list of HTTP status messages. We only need the errors.
+			// [Client Error 4xx]
+			400 => '400 Bad Request',
+			401 => '401 Unauthorized',
+			402 => '402 Payment Required',
+			403 => '403 Forbidden',
+			404 => '404 Not Found',
+			405 => '405 Method Not Allowed',
+			406 => '406 Not Acceptable',
+			407 => '407 Proxy Authentication Required',
+			408 => '408 Request Timeout',
+			409 => '409 Conflict',
+			410 => '410 Gone',
+			411 => '411 Length Required',
+			412 => '412 Precondition Failed',
+			413 => '413 Request Entity Too Large',
+			414 => '414 Request-URI Too Long',
+			415 => '415 Unsupported Media Type',
+			416 => '416 Requested Range Not Satisfiable',
+			417 => '417 Expectation Failed',
+			// [Server Error 5xx]
+			500 => '500 Internal Server Error',
+			501 => '501 Not Implemented',
+			502 => '502 Bad Gateway',
+			503 => '503 Service Unavailable',
+			504 => '504 Gateway Timeout',
+			505 => '505 HTTP Version Not Supported'
+		);
+
+		//Output a HTTP status header.
+		if ( isset($statusMessages[$httpStatus]) ) {
+			header('HTTP/1.1 ' . $statusMessages[$httpStatus]);
+			$title = $statusMessages[$httpStatus];
+		} else {
+			header('X-Ws-Update-Server-Error: ' . $httpStatus, true, $httpStatus);
+			$title = 'HTTP ' . $httpStatus;
+		}
+
+		//And a basic HTML error message.
+		printf(
+			'<html>
+				<head> <title>%1$s</title> </head>
+				<body> <h1>%1$s</h1> <p>%2$s</p> </body>
+			 </html>',
+			$title, $message
+		);
 		exit;
 	}
 }
