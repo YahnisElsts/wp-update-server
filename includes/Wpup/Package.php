@@ -62,11 +62,11 @@ class Wpup_Package {
 	 *
 	 * @param string $filename Path to a Zip archive that contains a WP plugin or theme.
 	 * @param string $slug Optional plugin or theme slug. Will be detected automatically.
-	 * @param Wpup_FileCache $cache
+	 * @param Wpup_Cache $cache
 	 * @throws Wpup_InvalidPackageException if the input file can't be parsed as a plugin or theme.
 	 * @return Wpup_Package
 	 */
-	public static function fromArchive($filename, $slug = null, Wpup_FileCache $cache = null) {
+	public static function fromArchive($filename, $slug = null, Wpup_Cache $cache = null) {
 		$modified = filemtime($filename);
 		$cacheKey = 'metadata-' . md5($filename . '|' . filesize($filename) . '|' . $modified);
 		$metadata = null;
@@ -79,9 +79,7 @@ class Wpup_Package {
 		if ( !isset($metadata) || !is_array($metadata) ) {
 			$metadata = self::extractMetadata($filename);
 			if ( $metadata === null ) {
-				throw new Wpup_InvalidPackageException(
-					'The specified file does not contain a valid WordPress plugin or theme.'
-				);
+				throw new Wpup_InvalidPackageException('The specified file does not contain a valid WordPress plugin or theme.');
 			}
 			$metadata['last_updated'] = gmdate('Y-m-d H:i:s', $modified);
 		}

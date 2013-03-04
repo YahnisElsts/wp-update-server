@@ -1,8 +1,8 @@
 <?php
 /**
- * A basic file-based cache.
+ * A simple file-based cache.
  */
-class Wpup_FileCache {
+class Wpup_FileCache implements Wpup_Cache {
 	protected $cacheDirectory;
 
 	public function __construct($cacheDirectory) {
