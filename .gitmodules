@@ -1,0 +1,3 @@
+[submodule "includes/extension-meta"]
+	path = includes/extension-meta
+	url = https://github.com/YahnisElsts/wp-extension-meta.git
