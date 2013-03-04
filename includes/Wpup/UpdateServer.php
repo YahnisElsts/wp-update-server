@@ -46,7 +46,16 @@ class Wpup_UpdateServer {
 			$this->exitWithError('You must specify a package slug.', 400);
 		}
 
-		$package = $this->findPackage($slug);
+		try {
+			$package = $this->findPackage($slug);
+		} catch (Wpup_InvalidPackageException $ex) {
+			$this->exitWithError(sprintf(
+				'Package "%s" exists, but it is not a valid plugin or theme. ' .
+				'Make sure it has the right format (Zip) and directory structure.',
+				htmlentities($slug)
+			));
+			exit;
+		}
 		if ( $package === null ) {
 			$this->exitWithError(sprintf('Package "%s" not found', htmlentities($slug)), 404);
 		}
