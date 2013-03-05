@@ -22,6 +22,21 @@ class Wpup_Request {
 		$this->package = $package;
 	}
 
+	/**
+	 * Get the value of a query parameter.
+	 *
+	 * @param string $name Parameter name.
+	 * @param mixed $default The value to return if the parameter doesn't exist. Defaults to null.
+	 * @return mixed
+	 */
+	public function param($name, $default = null) {
+		if ( array_key_exists($name, $this->query) ) {
+			return $this->query[$name];
+		} else {
+			return $default;
+		}
+	}
+
 	public function __get($name) {
 		if ( array_key_exists($name, $this->props) ) {
 			return $this->props[$name];
