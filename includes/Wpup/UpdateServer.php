@@ -1,6 +1,7 @@
 <?php
 class Wpup_UpdateServer {
 	protected $packageDirectory;
+	protected $logDirectory;
 	protected $cache;
 	protected $serverUrl;
 	protected $startTime = 0;
@@ -21,6 +22,7 @@ class Wpup_UpdateServer {
 
 		$this->serverUrl = $serverUrl;
 		$this->packageDirectory = $serverDirectory . '/packages';
+		$this->logDirectory = $serverDirectory . '/logs';
 		$this->cache = new Wpup_FileCache($serverDirectory . '/cache');
 	}
 
@@ -36,6 +38,7 @@ class Wpup_UpdateServer {
 		}
 
 		$request = $this->initRequest($query);
+		$this->logRequest($request);
 		$this->checkAuthorization($request);
 		$this->dispatch($request);
 		exit;
@@ -188,6 +191,32 @@ class Wpup_UpdateServer {
 			'slug' => $package->slug,
 		);
 		return $this->serverUrl . '?' . http_build_query($query, '', '&');
+	}
+
+	/**
+	 * Log an API request.
+	 *
+	 * @param Wpup_Request $request
+	 */
+	protected function logRequest($request) {
+		$logFile = $this->logDirectory . '/request.log';
+		$handle = fopen($logFile, 'a');
+		if ( $handle && flock($handle, LOCK_EX) ) {
+			fwrite(
+				$handle,
+				sprintf(
+					"[%s] %s\t%s\t%s\n",
+					date('Y-m-d H:i:s'),
+					$request->action,
+					$request->slug,
+					http_build_query($request->query, '', '&')
+				)
+			);
+			flock($handle, LOCK_UN);
+		}
+		if ( $handle ) {
+			fclose($handle);
+		}
 	}
 
 	/**
