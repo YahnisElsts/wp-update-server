@@ -190,7 +190,7 @@ class Wpup_UpdateServer {
 			'action' => 'download',
 			'slug' => $package->slug,
 		);
-		return $this->serverUrl . '?' . http_build_query($query, '', '&');
+		return self::addQueryArg($query, $this->serverUrl);
 	}
 
 	/**
