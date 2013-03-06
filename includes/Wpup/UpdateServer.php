@@ -34,7 +34,7 @@ class Wpup_UpdateServer {
 	public function handleRequest($query = null) {
 		$this->startTime = microtime(true);
 		if ( $query === null ) {
-			$query = array_merge($_GET, $_POST);
+			$query = $_GET;
 		}
 
 		$request = $this->initRequest($query);
@@ -288,5 +288,33 @@ class Wpup_UpdateServer {
 			$title, $message
 		);
 		exit;
+	}
+
+	/**
+	 * Add one or more query arguments to a URL.
+	 * You can also set an argument to NULL to remove it.
+	 *
+	 * @param array $args An associative array of query arguments.
+	 * @param string $url The old URL.
+	 * @return string New URL.
+	 */
+	protected static function addQueryArg($args, $url) {
+		if ( strpos($url, '?') !== false ) {
+			$parts = explode('?', $url, 2);
+			$base = $parts[0] . '?';
+			parse_str($parts[1], $query);
+		} else {
+			$base = $url . '?';
+			$query = array();
+		}
+
+		$query = array_merge($query, $args);
+
+		//Remove null/false arguments.
+		$query = array_filter($query, function($value) {
+			return ($value !== null) && ($value !== false);
+		});
+
+		return $base . http_build_query($query, '', '&');
 	}
 }
