@@ -38,7 +38,7 @@ class Wpup_UpdateServer {
 		}
 
 		$request = $this->initRequest($query);
-		$this->logRequest($request);
+		$this->logRequest($request); //TODO: Also log invalid requests like unknown actions and packages.
 		$this->checkAuthorization($request);
 		$this->dispatch($request);
 		exit;
