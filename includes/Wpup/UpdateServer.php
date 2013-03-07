@@ -11,7 +11,7 @@ class Wpup_UpdateServer {
 			$serverDirectory = realpath(__DIR__ . '/../..');
 		}
 		if ( $serverUrl === null ) {
-			//Default to the current URL (minus the query).
+			//Default to the current URL minus the query and "index.php".
 			$serverUrl = 'http://' . $_SERVER['HTTP_HOST'];
 			$path = $_SERVER['SCRIPT_NAME'];
 			if ( basename($path) === 'index.php' ) {
@@ -36,9 +36,9 @@ class Wpup_UpdateServer {
 		if ( $query === null ) {
 			$query = $_GET;
 		}
+		$this->logRequest($query);
 
 		$request = $this->initRequest($query);
-		$this->logRequest($request); //TODO: Also log invalid requests like unknown actions and packages.
 		$this->checkAuthorization($request);
 		$this->dispatch($request);
 		exit;
@@ -196,22 +196,35 @@ class Wpup_UpdateServer {
 	/**
 	 * Log an API request.
 	 *
-	 * @param Wpup_Request $request
+	 * @param array $query Query arguments.
 	 */
-	protected function logRequest($request) {
+	protected function logRequest($query) {
 		$logFile = $this->logDirectory . '/request.log';
 		$handle = fopen($logFile, 'a');
 		if ( $handle && flock($handle, LOCK_EX) ) {
-			fwrite(
-				$handle,
-				sprintf(
-					"[%s] %s\t%s\t%s\n",
-					date('Y-m-d H:i:s'),
-					$request->action,
-					$request->slug,
-					http_build_query($request->query, '', '&')
-				)
+
+			//If the request was made via the WordPress HTTP API we can usually
+			//get WordPress version and site URL from the user agent.
+			$wpVersion = $wpSiteUrl = null;
+			$regex = '@WordPress/(?P<version>\d[^;]*?);\s+(?P<url>https?://.+?)(?:\s|;|$)@i';
+			if ( isset($_SERVER['HTTP_USER_AGENT']) && preg_match($regex, $_SERVER['HTTP_USER_AGENT'], $matches) ) {
+				$wpVersion = $matches['version'];
+				$wpSiteUrl = $matches['url'];
+			}
+
+			$columns = array(
+				isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : '-',
+				isset($query['action']) ? $query['action'] : '-',
+				isset($query['slug'])   ? $query['slug']   : '-',
+				isset($query['installed_version']) ? $query['installed_version'] : '-',
+				isset($wpVersion) ? $wpVersion : '-',
+				isset($wpSiteUrl) ? $wpSiteUrl : '-',
+				http_build_query($query, '', '&')
 			);
+
+			$line = date('[Y-m-d H:i:s]') . ' ' . implode("\t", $columns) . "\n";
+
+			fwrite($handle, $line);
 			flock($handle, LOCK_UN);
 		}
 		if ( $handle ) {
