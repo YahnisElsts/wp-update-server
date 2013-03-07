@@ -213,7 +213,7 @@ class Wpup_UpdateServer {
 			}
 
 			$columns = array(
-				isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : '-',
+				isset($_SERVER['REMOTE_ADDR']) ? str_pad($_SERVER['REMOTE_ADDR'], 15, ' ') : '-',
 				isset($query['action']) ? $query['action'] : '-',
 				isset($query['slug'])   ? $query['slug']   : '-',
 				isset($query['installed_version']) ? $query['installed_version'] : '-',
