@@ -27,10 +27,10 @@ Getting Started
 ### Setting Up the Server
 This part of the setup process is identical for both plugins and themes. For the sake of brevity, I'll describe it from the plugin perspective.
 
-1. Upload the `wp-update-server` directory to your site. You can rename it to something else (like just `updates`) if you want. 
+1. Upload the `wp-update-server` directory to your site. You can rename it to something else (e.g. `updates`) if you want. 
 2. Make the `cache` and `logs` subdirectories writable by PHP.
 3. Create a Zip archive of your plugin directory. The name of the archive must be the same as the name of the directory + ".zip".
-4. Copy the Zip file to the `/packages` subdirectory.
+4. Copy the Zip file to the `packages` subdirectory.
 5. Verify that the API is working by visiting `/wp-update-server/?action=get_metadata&slug=plugin-directory-name` in your browser. You should see a JSON document containing various details of your plugin (name, version and so on).
 
 **Tip:** Use the JSONView extension ([Firefox](https://addons.mozilla.org/en-US/firefox/addon/10869/),  [Chrome](https://chrome.google.com/webstore/detail/jsonview/chklaanhfefbnpoihckbnefhakgolnmc)) to pretty-print JSON in the browser.
@@ -39,14 +39,13 @@ When creating the Zip file, make sure the plugin files are inside a directory an
 
 ```
 /my-cool-plugin
-    /css
-    /js
+    /stuff
     my-cool-plugin.php
     readme.txt
     ...
 ```
 
-If you put everything at the root, update notifications may show up just fine, but you will run into inexplicable problems when you try to install an update because WP expects plugin files to be inside a subdirectory.
+If you put everything at the root, update notifications may show up just fine, but you will run into inexplicable problems when you try to install an update because WordPress expects plugin files to be inside a subdirectory.
 
 ### Integrating with Plugins
 
@@ -64,11 +63,11 @@ $MyUpdateChecker = PucFactory::buildUpdateChecker(
 	'plugin-directory-name'
 );
 ```
-4. When you're ready to release an update, just zip the plugin directory as described above and put it in the `/packages` subdirectory on the server (overwriting the previous version). 
+4. When you're ready to release an update, just zip the plugin directory as described above and put it in the `packages` subdirectory on the server (overwriting the previous version). 
 
-The library will check for updates twice per day by default. You can also trigger an immediate check by going to the "Plugins" page and clicking the "Check for updates" link below the plugin's description. If the update checker discovers that a new version is available, it will display an update notification in the WordPress Dashboard and your users will be able to install it by clicking the "upgrade now" link. It works just like with plugins hosted on WordPress.org from the users' perspective. 
+The library will check for updates twice per day by default. If the update checker discovers that a new version is available, it will display an update notification in the WordPress Dashboard and your users will be able to install it by clicking the "upgrade now" link. It works just like with plugins hosted on WordPress.org from the users' perspective. 
 
-See the [update checker docs](http://w-shadow.com/blog/2010/09/02/automatic-updates-for-any-plugin/) for detailed usage instructions and and more example code.
+See the [update checker docs](http://w-shadow.com/blog/2010/09/02/automatic-updates-for-any-plugin/) for detailed usage instructions and and more examples.
 
 **Tip:** Create a `readme.txt` file for your plugin. If you have one, the update server will use it to generate the plugin information page that users see when they click the "View version x.y.z details" link in an update notification. The readme must conform to [the WordPress.org readme standard](http://wordpress.org/extend/plugins/about/readme.txt).
 
@@ -89,7 +88,7 @@ $MyThemeUpdateChecker = new ThemeUpdateChecker(
 
   ```Details URI: http://example.com/my-theme-changelog.html```
   
-  This header specifies the page that the user will see if they click the “View version x.y.z details” link in an update notification. Set it to the URL of your “What’s New In Version 1.2.3″ page or the theme homepage.
+  This header specifies the page that the user will see if they click the "View version x.y.z details" link in an update notification. Set it to the URL of your "What’s New In Version z.y.z" page or the theme homepage.
 
 Like with plugin updates, the theme update checker will query the server for theme details every 12 hours and display an update notification in the WordPress Dashboard if a new version is available.
 
