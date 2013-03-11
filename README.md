@@ -77,6 +77,7 @@ When you're ready to release an update, just zip the plugin directory as describ
 1. Download the [theme update checker](http://w-shadow.com/blog/2011/06/02/automatic-updates-for-commercial-themes/) library.
 2. Place the `theme-updates` directory in your `includes` or the equivalent.
 3. Add this snippet to your `functions.php`:
+
 ```php
 require 'path/to/theme-updates/theme-update-checker.php';
 $MyThemeUpdateChecker = new ThemeUpdateChecker(
