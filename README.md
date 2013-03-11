@@ -27,10 +27,11 @@ Getting Started
 ### Setting Up the Server
 This part of the setup process is identical for both plugins and themes. For the sake of brevity, I'll describe it from the plugin perspective.
 
-1. Upload the `wp-update-server` directory to your site. You can rename it to something else (e.g. simply `updates`) if you like.
-2. Create a Zip archive of your plugin directory. The name of the archive must be the same as the name of the directory + ".zip".
-3. Copy the Zip file to the `/packages` subdirectory.
-4. Verify that the API is working by visiting `/wp-update-server/?action=get_metadata&slug=plugin-directory-name` in your browser. You should see a JSON document containing various details of your plugin (name, version and so on).
+1. Upload the `wp-update-server` directory to your site. You can rename it to something else (like just `updates`) if you want. 
+2. Make the `cache` and `logs` subdirectories writable by PHP.
+3. Create a Zip archive of your plugin directory. The name of the archive must be the same as the name of the directory + ".zip".
+4. Copy the Zip file to the `/packages` subdirectory.
+5. Verify that the API is working by visiting `/wp-update-server/?action=get_metadata&slug=plugin-directory-name` in your browser. You should see a JSON document containing various details of your plugin (name, version and so on).
 
 **Tip:** Use the JSONView extension ([Firefox](https://addons.mozilla.org/en-US/firefox/addon/10869/),  [Chrome](https://chrome.google.com/webstore/detail/jsonview/chklaanhfefbnpoihckbnefhakgolnmc)) to pretty-print JSON in the browser.
 
