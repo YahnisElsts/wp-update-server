@@ -6,6 +6,8 @@ A custom update API for WordPress plugins and themes.
 Features
 --------
 * **Provide updates for plugins and themes.**    
+
+  From the users perspective, the updates work just like they do with plugins and themes listed in the official WordPress.org directory.
 * **Easy to set up.**
 
   Just upload the script directory to your server and drop a plugin or theme ZIP in the `packages` subdirectory. Now you have a working update API at `http://yourserver.com/wp-update-server/?action=get_metadata&slug=your-plugin`.
