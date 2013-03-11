@@ -31,7 +31,7 @@ This part of the setup process is identical for both plugins and themes. For the
 2. Make the `cache` and `logs` subdirectories writable by PHP.
 3. Create a Zip archive of your plugin directory. The name of the archive must be the same as the name of the directory + ".zip".
 4. Copy the Zip file to the `packages` subdirectory.
-5. Verify that the API is working by visiting `/wp-update-server/?action=get_metadata&slug=plugin-directory-name` in your browser. You should see a JSON document containing various details of your plugin (name, version and so on).
+5. Verify that the API is working by visiting `/wp-update-server/?action=get_metadata&slug=plugin-directory-name` in your browser. You should see a JSON document containing various information about your plugin (name, version, description and so on).
 
 **Tip:** Use the JSONView extension ([Firefox](https://addons.mozilla.org/en-US/firefox/addon/10869/),  [Chrome](https://chrome.google.com/webstore/detail/jsonview/chklaanhfefbnpoihckbnefhakgolnmc)) to pretty-print JSON in the browser.
 
@@ -65,7 +65,7 @@ $MyUpdateChecker = PucFactory::buildUpdateChecker(
 ```
 4. When you're ready to release an update, just zip the plugin directory as described above and put it in the `packages` subdirectory on the server (overwriting the previous version). 
 
-The library will check for updates twice per day by default. If the update checker discovers that a new version is available, it will display an update notification in the WordPress Dashboard and your users will be able to install it by clicking the "upgrade now" link. It works just like with plugins hosted on WordPress.org from the users' perspective. 
+The library will check for updates twice a day by default. If the update checker discovers that a new version is available, it will display an update notification in the WordPress Dashboard and the user will be able to install it by clicking the "upgrade now" link. It works just like with plugins hosted on WordPress.org from the users' perspective. 
 
 See the [update checker docs](http://w-shadow.com/blog/2010/09/02/automatic-updates-for-any-plugin/) for detailed usage instructions and and more examples.
 
