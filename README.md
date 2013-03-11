@@ -28,11 +28,13 @@ Getting Started
 This part of the setup process is identical for both plugins and themes. For the sake of brevity, I'll describe it from the plugin perspective.
 
 1. Upload the `wp-update-server` directory to your site. You can rename it to something else (e.g. simply `updates`) if you like.
-2. Create a Zip archive of your plugin directory. The name of the Zip file must be the same as the name of the directory + ".zip".
+2. Create a Zip archive of your plugin directory. The name of the archive must be the same as the name of the directory + ".zip".
 3. Copy the Zip file to the `/packages` subdirectory.
 4. Verify that the API is working by visiting `/wp-update-server/?action=get_metadata&slug=plugin-directory-name` in your browser. You should see a JSON document containing various details of your plugin (name, version and so on).
 
-When creating the Zip file, make sure all of the plugin files are inside a directory, not at the archive root. For example, lets say you have a plugin called "My Cool Plugin" and it lives inside `/wp-content/plugins/my-cool-plugin`. The ZIP file should be named `my-cool-plugin.zip` and it should contain the following:
+**Tip:** Use the JSONView extension ([Firefox version](https://addons.mozilla.org/en-US/firefox/addon/10869/),  [Chrome version](https://chrome.google.com/webstore/detail/jsonview/chklaanhfefbnpoihckbnefhakgolnmc).) to pretty-print JSON in your browser.
+
+When creating the Zip file, make sure the plugin files are inside a directory and not at the archive root. For example, lets say you have a plugin called "My Cool Plugin" and it lives inside `/wp-content/plugins/my-cool-plugin`. The ZIP file should be named `my-cool-plugin.zip` and it should contain the following:
 
 ```
 /my-cool-plugin
@@ -60,15 +62,13 @@ $MyUpdateChecker = PucFactory::buildUpdateChecker(
 );
 ```
 
-The library will check for updates twice per day by default. Alternatively, you can trigger an immediate check by going to the "Plugins" page and clicking th "Check for updates" link below your plugin's description.
-
-If the update checker discovers that a new version is available, it will display an update notification in the WordPress Dashboard and your users will be able to install it by clicking the "upgrade now" link. In other words, it works just like with plugins hosted on WordPress.org from the users' perspective. 
+The library will check for updates twice per day by default. Alternatively, you can trigger an immediate check by going to the "Plugins" page and clicking th "Check for updates" link below your plugin's description. If the update checker discovers that a new version is available, it will display an update notification in the WordPress Dashboard and your users will be able to install it by clicking the "upgrade now" link. It works just like with plugins hosted on WordPress.org from the users' perspective. 
 
 See the [update checker docs](http://w-shadow.com/blog/2010/09/02/automatic-updates-for-any-plugin/) for more detailed instructions and and examples.
 
 When you're ready to release an update, just zip the plugin directory as described above and put it in the `/packages` subdirectory on the server, overwriting the previous version. 
 
-**Tip:** Create a readme.txt file for your plugin. If you have one, the update server will use it to generate the plugin information panel that your users see when they click the "View version x.y.z details" link in an update notification. The readme must conform to [the WordPress.org readme standard](http://wordpress.org/extend/plugins/about/readme.txt).
+**Tip:** Create a `readme.txt` file for your plugin. If you have one, the update server will use it to generate the plugin information panel that users see when they click the "View version x.y.z details" link in an update notification. The readme must conform to [the WordPress.org readme standard](http://wordpress.org/extend/plugins/about/readme.txt).
 
 ### Integrating with Themes
 
