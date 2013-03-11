@@ -3,8 +3,6 @@ WP Update Server
 
 A custom update API for WordPress plugins and themes. 
 
-*Note: This documentation is incomplete.*
-
 Features
 --------
 * **Provide updates for plugins and themes.**    
@@ -13,10 +11,10 @@ Features
   Just upload the script directory to your server and drop a plugin or theme ZIP in the `packages` subdirectory. Now you have a working update API at `http://yourserver.com/wp-update-server/?action=get_metadata&slug=your-plugin`.
 * **Easy to integrate** with existing plugins and themes.
 
-  All it takes is about 5 lines of code. See the [plugin update checker](http://w-shadow.com/blog/2010/09/02/automatic-updates-for-any-plugin/) and [theme update checker](http://w-shadow.com/blog/2011/06/02/automatic-updates-for-commercial-themes/) docs for details, or jus scroll down to the "Getting Started" section for the short version.
+  All it takes is about 5 lines of code. See the [plugin update checker](http://w-shadow.com/blog/2010/09/02/automatic-updates-for-any-plugin/) and [theme update checker](http://w-shadow.com/blog/2011/06/02/automatic-updates-for-commercial-themes/) docs for details, or just scroll down to the "Getting Started" section for the short version.
 * **Minimal server requirements.**
 
-  Requires PHP 5.3+ and the Zip extension. No other dependencies.
+  The server component requires PHP 5.3+ and the Zip extension. The client library only requires PHP 5.2 - same as the current version of WordPress.
 * **Designed for extensibility.**
 
   Want to secure your upgrade download links? Or use a custom logger or cache? Maybe your plugin doesn't have a standard `readme.txt` and you'd prefer to load the changelog and other update meta from the database instead? Create your own customized server by extending the `Wpup_UpdateServer` class. See examples below.
@@ -29,7 +27,7 @@ This part of the setup process is identical for both plugins and themes. For the
 
 1. Upload the `wp-update-server` directory to your site. You can rename it to something else (e.g. `updates`) if you want. 
 2. Make the `cache` and `logs` subdirectories writable by PHP.
-3. Create a Zip archive of your plugin directory. The name of the archive must be the same as the name of the directory + ".zip".
+3. Create a Zip archive of your plugin's directory. The name of the archive must be the same as the name of the directory + ".zip".
 4. Copy the Zip file to the `packages` subdirectory.
 5. Verify that the API is working by visiting `/wp-update-server/?action=get_metadata&slug=plugin-directory-name` in your browser. You should see a JSON document containing various information about your plugin (name, version, description and so on).
 
@@ -39,7 +37,9 @@ When creating the Zip file, make sure the plugin files are inside a directory an
 
 ```
 /my-cool-plugin
-    /stuff
+    /css
+    /js
+    /another-directory
     my-cool-plugin.php
     readme.txt
     ...
@@ -95,9 +95,20 @@ Like with plugin updates, the theme update checker will query the server for the
 See the [theme update checker docs](http://w-shadow.com/blog/2011/06/02/automatic-updates-for-commercial-themes/) for more information.
 	
 ## Advanced Topics
-*TODO:* Describe how to do some or all of the following:
+
+*TODO:* This section is incomplete.
+
+### Logging
+
+The server logs all API requests to the `/logs/request.log` file. Each line represents one request and is formatted like this:
+
+```
+[timestamp] IP_address	action	slug	installed_version	wordpress_version	site_url	query_string
+```
+
+Missing or inapplicable fields are replaced with a dash "-". The logger extracts the WordPress version and site URL from the "User-Agent" header that WordPress adds to all requests sent via its HTTP API. These fields will not be present if the header is removed or overriden by a plugin (some security plugins do that) or if you access the API through the browser.
+
 ### Extending the server
 ### Securing download links
 ### Running the server from a plugin
 ### Changing the server URL
-### Logging
