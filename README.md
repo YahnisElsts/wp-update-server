@@ -2,6 +2,7 @@ WP Update Server
 ================
 
 A custom update API for WordPress plugins and themes. 
+
 *Note: This documentation is incomplete.*
 
 Features
@@ -24,31 +25,30 @@ Getting Started
 ---------------
 
 ### Setting Up the Server
-This part of the setup process is identical for both plugins and temes. For the sake of brevity, I'll describe it from the plugin perspective.
+This part of the setup process is identical for both plugins and themes. For the sake of brevity, I'll describe it from the plugin perspective.
 
 1. Upload the `wp-update-server` directory to your site. You can rename it to something else (e.g. simply `updates`) if you like.
-2. Create a ZIP archive of your plugin directory.
+2. Create a Zip archive of your plugin directory. The name of the Zip file must be the same as the name of the directory + ".zip".
+3. Copy the Zip file to the `/packages` subdirectory.
+4. Verify that the API is working by visiting `/wp-update-server/?action=get_metadata&slug=plugin-directory-name` in your browser. You should see a JSON document containing various details of your plugin (name, version and so on).
 
-   Make sure all of the plugin files are inside a directory, not at the archive root. The name of the Zip file should be the same as the name of your plugin's directory + ".zip".
-   
-   For example, lets say you have a plugin called "My Cool Plugin" and it lives inside `/wp-content/plugins/my-cool-plugin`. The ZIP file should be named `my-cool-plugin.zip` and it should contain the following:
+When creating the Zip file, make sure all of the plugin files are inside a directory, not at the archive root. For example, lets say you have a plugin called "My Cool Plugin" and it lives inside `/wp-content/plugins/my-cool-plugin`. The ZIP file should be named `my-cool-plugin.zip` and it should contain the following:
+
 ```
 /my-cool-plugin
     /css
     /js
     my-cool-plugin.php
     readme.txt
-    ...```
-  
-3. Copy the ZIP file to the `/packages` subdirectory.
-4. Verify that the API is working by visiting `/wp-update-server/?action=get_metadata&slug=plugin-directory-name` in your browser. You should see a JSON document containing various details of your plugin (name, version and so on).
+    ...
+```
 
 ### Integrating with Plugins
 
 Now that you have the server ready to go, the next step is to make your plugin periodically query it for updates and display them in the WP Dashboard. We'll use the [plugin-update-checker](https://github.com/YahnisElsts/plugin-update-checker) library to achieve that.
 
 1. Download the update checker.
-2. Place the `plugin-update-checker` directory inside your `includes` directory or equivalent.
+2. Place the `plugin-update-checker` directory inside your `includes` directory or the equivalent.
 3. Add the following code to your main plugin file:
 
   ```php
@@ -60,9 +60,9 @@ $MyUpdateChecker = PucFactory::buildUpdateChecker(
 );
 ```
 
-By default the update checker will check for updates twice per day. Alternatively, you can trigger an immediate check by going to the "Plugins" page and clicking th "Check for updates" link below your plugin's description.
+The library will check for updates twice per day by default. Alternatively, you can trigger an immediate check by going to the "Plugins" page and clicking th "Check for updates" link below your plugin's description.
 
-If the update checker discovers that a new versoin is available, it will display an update notification in the WordPress Dashboard. From the users' perspective it works just like with plugins hosted on WordPress.org. 
+If the update checker discovers that a new version is available, it will display an update notification in the WordPress Dashboard and your users will be able to install it by clicking the "upgrade now" link. In other words, it works just like with plugins hosted on WordPress.org from the users' perspective. 
 
 See the [update checker docs](http://w-shadow.com/blog/2010/09/02/automatic-updates-for-any-plugin/) for more detailed instructions and and examples.
 
@@ -73,10 +73,9 @@ When you're ready to release an update, just zip the plugin directory as describ
 ### Integrating with Themes
 
 1. Download the [theme update checker](http://w-shadow.com/blog/2011/06/02/automatic-updates-for-commercial-themes/) library.
-2. Place the `theme-updates` directory in your `includes` or equivalent.
+2. Place the `theme-updates` directory in your `includes` or the equivalent.
 3. Add this snippet to your `functions.php`:
-
-  ```php
+```php
 require 'path/to/theme-updates/theme-update-checker.php';
 $MyThemeUpdateChecker = new ThemeUpdateChecker(
     'theme-directory-name',
