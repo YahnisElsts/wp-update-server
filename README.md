@@ -108,7 +108,7 @@ The server logs all API requests to the `/logs/request.log` file. Each line repr
 [timestamp] IP_address	action	slug	installed_version	wordpress_version	site_url	query_string
 ```
 
-Missing or inapplicable fields are replaced with a dash "-". The logger extracts the WordPress version and site URL from the "User-Agent" header that WordPress adds to all requests sent via its HTTP API. These fields will not be present if the header is removed or overriden by a plugin (some security plugins do that) or if you access the API through the browser.
+Missing or inapplicable fields are replaced with a dash "-". The logger extracts the WordPress version and site URL from the "User-Agent" header that WordPress adds to all requests sent via its HTTP API. These fields will not be present if you make an API request via the browser or if the header is removed or overriden by a plugin (some security plugins do that).
 
 ### Extending the server
 ### Securing download links
