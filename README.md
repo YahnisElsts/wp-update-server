@@ -56,6 +56,7 @@ Now that you have the server ready to go, the next step is to make your plugin q
 1. Download the update checker.
 2. Move the `plugin-update-checker` directory to your plugin's directory.
 3. Add the following code to your main plugin file:
+
 ```php
 require 'path/to/plugin-update-checker/plugin-update-checker.php';
 $MyUpdateChecker = PucFactory::buildUpdateChecker(
