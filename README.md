@@ -136,7 +136,7 @@ Edit `index.php` to use the new class:
 
 ```php
 require __DIR__ . '/loader.php';
-require __DIR__ . 'MyCustomServer.php';
+require __DIR__ . '/MyCustomServer.php';
 $server = new MyCustomServer();
 $server->handleRequest();
 ```
