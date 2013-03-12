@@ -57,7 +57,7 @@ Now that you have the server ready to go, the next step is to make your plugin q
 2. Move the `plugin-update-checker` directory to your plugin's directory.
 3. Add the following code to your main plugin file:
 
-```php
+   ```php
 require 'path/to/plugin-update-checker/plugin-update-checker.php';
 $MyUpdateChecker = PucFactory::buildUpdateChecker(
 	'http://example.com/wp-update-server/?action=get_metadata&slug=plugin-directory-name', //Metadata URL.
@@ -82,7 +82,7 @@ See the [update checker docs](http://w-shadow.com/blog/2010/09/02/automatic-upda
    ```php
 require 'path/to/theme-updates/theme-update-checker.php';
 $MyThemeUpdateChecker = new ThemeUpdateChecker(
-    'theme-directory-name', //Theme slug. Usually identical to the name of its directory.
+    'theme-directory-name', //Theme slug. Usually the same as the name of its directory.
     'http://example.com/wp-update-server/?action=get_metadata&slug=theme-directory-name' //Metadata URL.
 );
 ```
