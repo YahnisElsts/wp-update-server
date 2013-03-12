@@ -51,18 +51,18 @@ If you put everything at the root, update notifications may show up just fine, b
 
 ### Integrating with Plugins
 
-Now that you have the server ready to go, the next step is to make your plugin periodically query it for updates and display them in the WP Dashboard. We'll use the [plugin-update-checker](https://github.com/YahnisElsts/plugin-update-checker) library to achieve that.
+Now that you have the server ready to go, the next step is to make your plugin query it for updates. We'll use the [plugin-update-checker](https://github.com/YahnisElsts/plugin-update-checker) library to achieve that.
 
 1. Download the update checker.
-2. Place the `plugin-update-checker` directory inside your `includes` directory or the equivalent.
+2. Move the `plugin-update-checker` directory to your plugin's directory.
 3. Add the following code to your main plugin file:
 
    ```php
 require 'path/to/plugin-update-checker/plugin-update-checker.php';
 $MyUpdateChecker = PucFactory::buildUpdateChecker(
-	'http://example.com/wp-update-server/?action=get_metadata&slug=plugin-directory-name',
-	__FILE__,
-	'plugin-directory-name'
+	'http://example.com/wp-update-server/?action=get_metadata&slug=plugin-directory-name', //Metadata URL.
+	__FILE__, //Full path to the main plugin file.
+	'plugin-directory-name' //Plugin slug. Usually it's the same as the name of the directory.
 );
 ```
 4. When you're ready to release an update, just zip the plugin directory as described above and put it in the `packages` subdirectory on the server (overwriting the previous version). 
@@ -82,8 +82,8 @@ See the [update checker docs](http://w-shadow.com/blog/2010/09/02/automatic-upda
    ```php
 require 'path/to/theme-updates/theme-update-checker.php';
 $MyThemeUpdateChecker = new ThemeUpdateChecker(
-    'theme-directory-name',
-    'http://example.com/wp-update-server/?action=get_metadata&slug=theme-directory-name'
+    'theme-directory-name', //Theme slug. Usually identical to the name of its directory.
+    'http://example.com/wp-update-server/?action=get_metadata&slug=theme-directory-name' //Metadata URL.
 );
 ```
 4. Add a `Details URI` header to your `style.css`:
