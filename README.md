@@ -111,6 +111,91 @@ The server logs all API requests to the `/logs/request.log` file. Each line repr
 Missing or inapplicable fields are replaced with a dash "-". The logger extracts the WordPress version and site URL from the "User-Agent" header that WordPress adds to all requests sent via its HTTP API. These fields will not be present if you make an API request via the browser or if the header is removed or overriden by a plugin (some security plugins do that).
 
 ### Extending the server
+
+To customize the way the update server works, create your own server class that extends [Wpup_UpdateServer](includes/Wpup/UpdateServer.php) and edit the init script (that's `index.php` if you're running the server as a standalone app) to load and use the new class.
+
+For example, lets make a simple modification that disables downloads and removes the download URL from the plugin details returned by the update API. This could serve as a foundation for a custom server that requires authorization to download an update.
+
+Add a new file `MyCustomServer.php` to `wp-update-server`:
+
+```php
+class MyCustomServer extends Wpup_UpdateServer {
+	protected function filterMetadata($meta, $request) {
+		$meta = parent::filterMetadata($meta, $request);
+		unset($meta['download_url']);
+		return $meta;
+	}
+	
+	protected function actionDownload(Wpup_Request $request) {
+		$this->exitWithError('Downloads are disabled.', 403);
+	}
+}
+```
+
+Edit `index.php` to use the new class:
+
+```php
+require __DIR__ . '/loader.php';
+require __DIR__ . 'MyCustomServer.php';
+$server = new MyCustomServer();
+$server->handleRequest();
+```
+
+### Running the server from another script
+
+While the easiest way to use the update server is to run it as a standalone application, that's not the only way to do it. If you need to, you can also load it as a third-party library and create your own server instance. This lets you  filter and modify query arguments before passing them to the server, run it from a WordPress plugin, use your own server class, and so on.
+
+To run the server from your own application you need to do three things:
+
+1. Include `/wp-update-server/loader.php`.
+2. Create an instance of `Wpup_UpdateServer` or a class that extends it.
+3. Call the `handleRequest($queryParams)` method.
+
+Here's a basic example plugin that runs the update server from inside WordPress:
+```php
+<?php
+/*
+Plugin Name: Plugin Update Server
+Description: An example plugin that runs the update API.
+Version: 1.0
+Author: Yahnis Elsts
+Author URI: http://w-shadow.com/
+*/
+
+class ExamplePlugin {
+	protected $updateServer;
+
+	public function __construct() {
+		require_once __DIR__ . '/path/to/wp-update-server/loader.php';
+		$this->updateServer = new Wpup_UpdateServer(home_url('/'));
+		
+		add_filter('query_vars', array($this, 'addQueryVariables'));
+		add_action('template_redirect', array($this, 'handleUpdateApiRequest'));
+	}
+	
+	public function addQueryVariables($queryVariables) {
+		$queryVariables = array_merge($queryVariables, array(
+			'update_action',
+			'update_slug',
+		));
+		return $queryVariables;
+	}
+	
+	public function handleUpdateApiRequest() {
+		if ( get_query_var('update_action') ) {
+			$this->updateServer->handleRequest(array(
+				'action' => get_query_var('update_action'),
+				'slug'   => get_query_var('update_slug'),
+			));
+		}
+	}
+}
+
+$examplePlugin = new ExamplePlugin();
+```
+
+**Note:** If you intend to use something like the above in practice, you'll probably want to override `Wpup_UpdateServer::generateDownloadUrl()` to use your own URL structure or query variable names.
+
 ### Securing download links
 ### Running the server from a plugin
 ### Changing the server URL
