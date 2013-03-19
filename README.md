@@ -197,4 +197,7 @@ $examplePlugin = new ExamplePlugin();
 **Note:** If you intend to use something like the above in practice, you'll probably want to override `Wpup_UpdateServer::generateDownloadUrl()` to use your own URL structure or query variable names.
 
 ### Securing download links
+
+See [this blog post](http://w-shadow.com/blog/2013/03/19/plugin-updates-securing-download-links/) for a high-level overview and some brief examples.
+
 ### Changing the server URL
