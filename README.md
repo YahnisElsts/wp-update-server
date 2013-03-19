@@ -98,8 +98,6 @@ See the [theme update checker docs](http://w-shadow.com/blog/2011/06/02/automati
 	
 ## Advanced Topics
 
-*TODO:* This section is incomplete.
-
 ### Logging
 
 The server logs all API requests to the `/logs/request.log` file. Each line represents one request and is formatted like this:
@@ -199,5 +197,3 @@ $examplePlugin = new ExamplePlugin();
 ### Securing download links
 
 See [this blog post](http://w-shadow.com/blog/2013/03/19/plugin-updates-securing-download-links/) for a high-level overview and some brief examples.
-
-### Changing the server URL
