@@ -73,6 +73,8 @@ See the [update checker docs](http://w-shadow.com/blog/2010/09/02/automatic-upda
 
 **Tip:** Create a `readme.txt` file for your plugin. If you have one, the update server will use it to generate the plugin information page that users see when they click the "View version x.y.z details" link in an update notification. The readme must conform to [the WordPress.org readme standard](http://wordpress.org/extend/plugins/about/readme.txt).
 
+**Note:** Your plugin or theme must be active for updates to work. One consequence of this is that on a multisite installation updates will only show up if your plugin is active on the main site. This is because only plugins that are enabled on the main site are loaded in the network admin. For reference, the main site is the one that has the path "/" in the *All Sites* list. 
+
 ### Integrating with Themes
 
 1. Download the [theme update checker](http://w-shadow.com/blog/2011/06/02/automatic-updates-for-commercial-themes/) library.
