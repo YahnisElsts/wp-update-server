@@ -96,7 +96,7 @@ class Wpup_Package {
 	}
 
 	/**
-	 * Extract plugin or theme headers and readme contents from a 's ZIP file and convert them
+	 * Extract plugin or theme headers and readme contents from a ZIP file and convert them
 	 * into a structure compatible with the custom update checker.
 	 *
 	 * See this page for an overview of the plugin metadata format:
