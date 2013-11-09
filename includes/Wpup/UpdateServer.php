@@ -222,7 +222,7 @@ class Wpup_UpdateServer {
 				http_build_query($query, '', '&')
 			);
 
-			$line = date('[Y-m-d H:i:s]') . ' ' . implode("\t", $columns) . "\n";
+			$line = date('[Y-m-d H:i:s O]') . ' ' . implode("\t", $columns) . "\n";
 
 			fwrite($handle, $line);
 			flock($handle, LOCK_UN);
