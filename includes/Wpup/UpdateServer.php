@@ -222,6 +222,10 @@ class Wpup_UpdateServer {
 				http_build_query($query, '', '&')
 			);
 
+			//Set the time zone to whatever the default is to avoid PHP notices.
+			//Will default to UTC if it's not set properly in php.ini.
+			date_default_timezone_set(@date_default_timezone_get());
+
 			$line = date('[Y-m-d H:i:s O]') . ' ' . implode("\t", $columns) . "\n";
 
 			fwrite($handle, $line);
