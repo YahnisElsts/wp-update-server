@@ -18,7 +18,7 @@ class Wpup_FileCache implements Wpup_Cache {
 	public function get($key) {
 		$filename = $this->getCacheFilename($key);
 		if ( is_file($filename) && is_readable($filename) ) {
-			$cache = unserialize(file_get_contents($filename));
+			$cache = unserialize(base64_decode(file_get_contents($filename)));
 			if ( $cache['expiration_time'] < time() ) {
 				return null; //Cache expired.
 			} else {
@@ -41,7 +41,7 @@ class Wpup_FileCache implements Wpup_Cache {
 			'expiration_time' => time() + $expiration,
 			'value' => $value,
 		);
-		file_put_contents($this->getCacheFilename($key), serialize($cache));
+		file_put_contents($this->getCacheFilename($key), base64_encode(serialize($cache)));
 	}
 
 	/**
