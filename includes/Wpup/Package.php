@@ -9,6 +9,13 @@
  * file and store the actual download elsewhere - or even generate it on the fly.
  */
 class Wpup_Package {
+	
+	/**
+	 * @var int $cacheTime  How long the package metadata should be cached in seconds.
+	 *                       Defaults to 1 week ( 7 * 24 * 60 * 60 ).
+	 */
+	public static $cacheTime = 604800;
+
 	/** @var string Path to the Zip archive that contains the plugin or theme. */
 	protected $filename;
 
@@ -86,7 +93,7 @@ class Wpup_Package {
 
 		//Update cache.
 		if ( isset($cache) ) {
-			$cache->set($cacheKey, $metadata, 7 * 24 * 3600);
+			$cache->set($cacheKey, $metadata, self::$cacheTime);
 		}
 		if ( $slug === null ) {
 			$slug = $metadata['slug'];
