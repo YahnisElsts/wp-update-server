@@ -52,6 +52,7 @@ class Wpup_UpdateServer {
 		$serverUrl .= $path;
 		return $serverUrl;
 	}
+
 	/**
 	 * Determine if ssl is used.
 	 *
