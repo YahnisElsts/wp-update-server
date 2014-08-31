@@ -68,7 +68,7 @@ class Wpup_Package {
 	 */
 	public static function fromArchive($filename, $slug = null, Wpup_Cache $cache = null) {
 		$modified = filemtime($filename);
-		$cacheKey = 'metadata-' . md5($filename . '|' . filesize($filename) . '|' . $modified);
+		$cacheKey = 'metadata-' . $slug . '-' . md5($filename . '|' . filesize($filename) . '|' . $modified);
 		$metadata = null;
 
 		//Try the cache first.
