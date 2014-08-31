@@ -79,7 +79,7 @@ class Wpup_Package {
 		if ( !isset($metadata) || !is_array($metadata) ) {
 			$metadata = self::extractMetadata($filename);
 			if ( $metadata === null ) {
-				throw new Wpup_InvalidPackageException('The specified file does not contain a valid WordPress plugin or theme.');
+				throw new Wpup_InvalidPackageException( sprintf('The specified file %s does not contain a valid WordPress plugin or theme.', $filename));
 			}
 			$metadata['last_updated'] = gmdate('Y-m-d H:i:s', $modified);
 		}
