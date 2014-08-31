@@ -33,13 +33,25 @@ class Wpup_UpdateServer {
 		$serverUrl = ( self::isSsl() ? 'https' : 'http' );
 		$serverUrl .= '://' . $_SERVER['HTTP_HOST'];
 		$path = $_SERVER['SCRIPT_NAME'];
+
 		if ( basename($path) === 'index.php' ) {
-			$path = dirname($path) . '/';
+			if ( DIRECTORY_SEPARATOR === '/' ) {
+				$path = dirname($path) . '/';
+			}
+			else {
+				// Fix Windows
+				if ( dirname($path) === '\\' ) {
+					$path = '/';
+				}
+				else {
+					$path = str_replace('\\', '/', dirname($path)) . '/';
+				}
+			}
 		}
+
 		$serverUrl .= $path;
 		return $serverUrl;
 	}
-
 	/**
 	 * Determine if ssl is used.
 	 *
