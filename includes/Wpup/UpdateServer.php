@@ -11,19 +11,53 @@ class Wpup_UpdateServer {
 			$serverDirectory = realpath(__DIR__ . '/../..');
 		}
 		if ( $serverUrl === null ) {
-			//Default to the current URL minus the query and "index.php".
-			$serverUrl = 'http://' . $_SERVER['HTTP_HOST'];
-			$path = $_SERVER['SCRIPT_NAME'];
-			if ( basename($path) === 'index.php' ) {
-				$path = dirname($path) . '/';
-			}
-			$serverUrl .= $path;
+			$serverUrl = self::determineServerUrl();
 		}
 
 		$this->serverUrl = $serverUrl;
 		$this->packageDirectory = $serverDirectory . '/packages';
 		$this->logDirectory = $serverDirectory . '/logs';
 		$this->cache = new Wpup_FileCache($serverDirectory . '/cache');
+	}
+
+	/**
+	 * Determine the Server Url based on the current request.
+	 *
+	 * Defaults to the current URL minus the query and "index.php".
+	 *
+	 * @static
+	 *
+	 * @return string Url
+	 */
+	public static function determineServerUrl() {
+		$serverUrl = ( self::isSsl() ? 'https' : 'http' );
+		$serverUrl .= '://' . $_SERVER['HTTP_HOST'];
+		$path = $_SERVER['SCRIPT_NAME'];
+		if ( basename($path) === 'index.php' ) {
+			$path = dirname($path) . '/';
+		}
+		$serverUrl .= $path;
+		return $serverUrl;
+	}
+
+	/**
+	 * Determine if ssl is used.
+	 *
+	 * @return bool True if SSL, false if not used.
+	 */
+    public static function isSsl() {
+        if ( isset($_SERVER['HTTPS']) ) {
+            if ( 'on' === strtolower($_SERVER['HTTPS']) ) {
+                return true;
+			}
+	        if ( '1' == $_SERVER['HTTPS'] ) {
+                return true;
+            }
+        }
+		elseif ( isset($_SERVER['SERVER_PORT']) && ( '443' == $_SERVER['SERVER_PORT'] ) ) {
+            return true;
+		}
+        return false;
 	}
 
 	/**
@@ -312,10 +346,13 @@ class Wpup_UpdateServer {
 	 * You can also set an argument to NULL to remove it.
 	 *
 	 * @param array $args An associative array of query arguments.
-	 * @param string $url The old URL.
+	 * @param string $url The old URL. Optional, defaults to the request url without query arguments.
 	 * @return string New URL.
 	 */
-	protected static function addQueryArg($args, $url) {
+	protected static function addQueryArg($args, $url = null ) {
+		if ( !isset($url) ) {
+			$url = self::determineServerUrl();
+		}
 		if ( strpos($url, '?') !== false ) {
 			$parts = explode('?', $url, 2);
 			$base = $parts[0] . '?';
