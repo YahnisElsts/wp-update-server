@@ -51,4 +51,18 @@ class Wpup_FileCache implements Wpup_Cache {
 	protected function getCacheFilename($key) {
 		return $this->cacheDirectory . '/' . $key . '.txt';
 	}
+	
+	
+	/**
+	 * Clear a cache.
+	 *
+	 * @param string $key Cache key.
+	 * @return void
+	 */
+	public function clear($key) {
+		$file = $this->getCacheFilename($key);
+		if ( is_file( $file ) ) {
+			unlink($file);
+		}
+	}
 }
