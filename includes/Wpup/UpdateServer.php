@@ -203,14 +203,8 @@ class Wpup_UpdateServer {
 		$handle = fopen($logFile, 'a');
 		if ( $handle && flock($handle, LOCK_EX) ) {
 
-			//If the request was made via the WordPress HTTP API we can usually
-			//get WordPress version and site URL from the user agent.
-			$wpVersion = $wpSiteUrl = null;
-			$regex = '@WordPress/(?P<version>\d[^;]*?);\s+(?P<url>https?://.+?)(?:\s|;|$)@i';
-			if ( isset($_SERVER['HTTP_USER_AGENT']) && preg_match($regex, $_SERVER['HTTP_USER_AGENT'], $matches) ) {
-				$wpVersion = $matches['version'];
-				$wpSiteUrl = $matches['url'];
-			}
+			$wpVersion = Wpup_Request::getWpVersion();
+			$wpSiteUrl = Wpup_Request::getWpSiteUrl();
 
 			$columns = array(
 				isset($_SERVER['REMOTE_ADDR']) ? str_pad($_SERVER['REMOTE_ADDR'], 15, ' ') : '-',
