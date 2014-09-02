@@ -58,19 +58,19 @@ class Wpup_UpdateServer {
 	 *
 	 * @return bool True if SSL, false if not used.
 	 */
-    public static function isSsl() {
-        if ( isset($_SERVER['HTTPS']) ) {
-            if ( 'on' === strtolower($_SERVER['HTTPS']) ) {
-                return true;
+	public static function isSsl() {
+		if ( isset($_SERVER['HTTPS']) ) {
+			if ( 'on' === strtolower($_SERVER['HTTPS']) ) {
+				return true;
 			}
-	        if ( '1' == $_SERVER['HTTPS'] ) {
-                return true;
-            }
-        }
-		elseif ( isset($_SERVER['SERVER_PORT']) && ( '443' == $_SERVER['SERVER_PORT'] ) ) {
-            return true;
+			if ( '1' == $_SERVER['HTTPS'] ) {
+				return true;
+			}
 		}
-        return false;
+		elseif ( isset($_SERVER['SERVER_PORT']) && ( '443' == $_SERVER['SERVER_PORT'] ) ) {
+			return true;
+		}
+		return false;
 	}
 
 	/**
@@ -262,7 +262,7 @@ class Wpup_UpdateServer {
 			$columns = array(
 				isset($_SERVER['REMOTE_ADDR']) ? str_pad($_SERVER['REMOTE_ADDR'], 15, ' ') : '-',
 				isset($query['action']) ? $query['action'] : '-',
-				isset($query['slug'])   ? $query['slug']   : '-',
+				isset($query['slug']) ? $query['slug']   : '-',
 				isset($query['installed_version']) ? $query['installed_version'] : '-',
 				isset($wpVersion) ? $wpVersion : '-',
 				isset($wpSiteUrl) ? $wpSiteUrl : '-',
