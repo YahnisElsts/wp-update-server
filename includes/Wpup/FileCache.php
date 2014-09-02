@@ -61,7 +61,7 @@ class Wpup_FileCache implements Wpup_Cache {
 	 */
 	public function clear($key) {
 		$file = $this->getCacheFilename($key);
-		if ( is_file( $file ) ) {
+		if ( is_file($file) ) {
 			unlink($file);
 		}
 	}
