@@ -128,6 +128,8 @@ class WshWordPressPackageParser {
 			'stable' => '',
 			'short_description' => '',
 			'sections' => array(),
+			'depends' => array(),
+			'provides' => array(),
 		);
 
 		//The readme.txt header has a fairly fixed structure, so we can parse it line-by-line
@@ -148,6 +150,8 @@ class WshWordPressPackageParser {
 			'Requires at least' => 'requires',
 			'Tested up to' => 'tested',
 			'Stable tag' => 'stable',
+			'Depends' => 'depends',
+			'Provides' => 'provides',
 		);
 		do { //Parse each readme.txt header
 			$pieces = explode(':', array_shift($lines), 2);
@@ -168,6 +172,16 @@ class WshWordPressPackageParser {
 		//Likewise for "Tags"
 		if ( !empty($headers['tags']) ){
 			$headers['tags'] = array_map('trim', explode(',', $headers['tags']));
+		}
+
+		//And for "Depends"
+		if ( !empty($headers['depends']) ){
+			$headers['depends'] = array_map('trim', explode(',', $headers['depends']));
+		}
+
+		//As well as for "Provides"
+		if ( !empty($headers['provides']) ){
+			$headers['provides'] = array_map('trim', explode(',', $headers['provides']));
 		}
 
 		$readme = array_merge($readme, $headers);

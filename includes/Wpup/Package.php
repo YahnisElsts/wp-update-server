@@ -138,7 +138,12 @@ class Wpup_Package {
 		}
 
 		if ( !empty($packageInfo['readme']) ){
-			$mapping = array('requires', 'tested');
+			$mapping = array(
+				'requires',
+				'tested',
+				'depends',
+				'provides',
+			);
 			foreach($mapping as $readmeField){
 				if ( !empty($packageInfo['readme'][$readmeField]) ){
 					$meta[$readmeField] = $packageInfo['readme'][$readmeField];
