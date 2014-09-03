@@ -269,7 +269,7 @@ class Wpup_UpdateServer {
 	 * @param string $message Error message.
 	 * @param int $httpStatus Optional HTTP status code. Defaults to 500 (Internal Server Error).
 	 */
-	protected function exitWithError($message, $httpStatus = 500) {
+	protected function exitWithError($message = '', $httpStatus = 500) {
 		$statusMessages = array(
 			// This is not a full list of HTTP status messages. We only need the errors.
 			// [Client Error 4xx]
@@ -299,14 +299,24 @@ class Wpup_UpdateServer {
 			504 => '504 Gateway Timeout',
 			505 => '505 HTTP Version Not Supported'
 		);
+		
+		if ( !isset($_SERVER['SERVER_PROTOCOL']) || $_SERVER['SERVER_PROTOCOL'] === '' ) {
+			$protocol = 'HTTP/1.1';
+		} else {
+			$protocol = $_SERVER['SERVER_PROTOCOL'];
+		}
 
 		//Output a HTTP status header.
 		if ( isset($statusMessages[$httpStatus]) ) {
-			header('HTTP/1.1 ' . $statusMessages[$httpStatus]);
+			header($protocol . ' ' . $statusMessages[$httpStatus]);
 			$title = $statusMessages[$httpStatus];
 		} else {
 			header('X-Ws-Update-Server-Error: ' . $httpStatus, true, $httpStatus);
 			$title = 'HTTP ' . $httpStatus;
+		}
+		
+		if ( $message === '' ) {
+			$message = $title;
 		}
 
 		//And a basic HTML error message.
