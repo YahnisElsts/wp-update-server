@@ -289,8 +289,7 @@ class Wpup_UpdateServer {
 		
 		if ( !isset($_SERVER['SERVER_PROTOCOL']) || $_SERVER['SERVER_PROTOCOL'] === '' ) {
 			$protocol = 'HTTP/1.1';
-		}
-		else {
+		} else {
 			$protocol = $_SERVER['SERVER_PROTOCOL'];
 		}
 
