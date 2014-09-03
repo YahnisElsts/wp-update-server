@@ -239,12 +239,10 @@ class Wpup_UpdateServer {
 	}
 	
 	/**
-	 * Adjust information which will be logged
+	 * Adjust information that will be logged.
+	 * Intended to be overridden in child classes.
 	 *
-	 * Intended to be implemented in child classes
-	 *
-	 * @param array $columns Information to be logged
-	 *
+	 * @param array $columns List of columns in the log entry.
 	 * @return array
 	 */
 	protected function filterLogInfo($columns) {
