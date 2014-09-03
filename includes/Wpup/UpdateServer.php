@@ -29,7 +29,7 @@ class Wpup_UpdateServer {
 	/**
 	 * Process an update API request.
 	 *
-	 * @param array|null $query Query parameters. Defaults to the current request parameters (GET + POST).
+	 * @param array|null $query Query parameters. Defaults to the current GET request parameters.
 	 */
 	public function handleRequest($query = null) {
 		$this->startTime = microtime(true);
