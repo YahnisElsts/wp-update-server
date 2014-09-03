@@ -37,8 +37,7 @@ class Wpup_UpdateServer {
 		if ( basename($path) === 'index.php' ) {
 			if ( DIRECTORY_SEPARATOR === '/' ) {
 				$path = dirname($path) . '/';
-			}
-			else {
+			} else {
 				// Fix Windows
 				if ( dirname($path) === '\\' ) {
 					$path = '/';
