@@ -288,12 +288,15 @@ class Wpup_UpdateServer {
 		);
 		
 		if ( !isset($_SERVER['SERVER_PROTOCOL']) || $_SERVER['SERVER_PROTOCOL'] === '' ) {
-			$_SERVER['SERVER_PROTOCOL'] = 'HTTP/1.1';
+			$protocol = 'HTTP/1.1';
+		}
+		else {
+			$protocol = $_SERVER['SERVER_PROTOCOL'];
 		}
 
 		//Output a HTTP status header.
 		if ( isset($statusMessages[$httpStatus]) ) {
-			header($_SERVER['SERVER_PROTOCOL'] . ' ' . $statusMessages[$httpStatus]);
+			header($protocol . ' ' . $statusMessages[$httpStatus]);
 			$title = $statusMessages[$httpStatus];
 		} else {
 			header('X-Ws-Update-Server-Error: ' . $httpStatus, true, $httpStatus);
