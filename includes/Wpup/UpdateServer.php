@@ -42,8 +42,7 @@ class Wpup_UpdateServer {
 				// Fix Windows
 				if ( dirname($path) === '\\' ) {
 					$path = '/';
-				}
-				else {
+				} else {
 					$path = str_replace('\\', '/', dirname($path)) . '/';
 				}
 			}
@@ -56,14 +55,13 @@ class Wpup_UpdateServer {
 	/**
 	 * Determine if ssl is used.
 	 *
+	 * @see WP core - wp-includes/functions.php
+	 *
 	 * @return bool True if SSL, false if not used.
 	 */
 	public static function isSsl() {
 		if ( isset($_SERVER['HTTPS']) ) {
-			if ( 'on' === strtolower($_SERVER['HTTPS']) ) {
-				return true;
-			}
-			if ( '1' == $_SERVER['HTTPS'] ) {
+			if ( $_SERVER['HTTPS'] == '1' || strtolower($_SERVER['HTTPS']) === 'on' ) {
 				return true;
 			}
 		}
@@ -261,8 +259,8 @@ class Wpup_UpdateServer {
 
 			$columns = array(
 				isset($_SERVER['REMOTE_ADDR']) ? str_pad($_SERVER['REMOTE_ADDR'], 15, ' ') : '-',
-				isset($query['action']) ? $query['action'] : '-',
-				isset($query['slug']) ? $query['slug']   : '-',
+				isset($query['action'])            ? $query['action']            : '-',
+				isset($query['slug'])              ? $query['slug']              : '-',
 				isset($query['installed_version']) ? $query['installed_version'] : '-',
 				isset($wpVersion) ? $wpVersion : '-',
 				isset($wpSiteUrl) ? $wpSiteUrl : '-',
