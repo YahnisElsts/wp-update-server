@@ -214,6 +214,7 @@ class Wpup_UpdateServer {
 
 			$columns = array(
 				isset($_SERVER['REMOTE_ADDR']) ? str_pad($_SERVER['REMOTE_ADDR'], 15, ' ') : '-',
+				isset($_SERVER['REQUEST_METHOD']) ? str_pad($_SERVER['REQUEST_METHOD'], 4, ' ') : '-',
 				isset($query['action']) ? $query['action'] : '-',
 				isset($query['slug'])   ? $query['slug']   : '-',
 				isset($query['installed_version']) ? $query['installed_version'] : '-',
@@ -221,6 +222,7 @@ class Wpup_UpdateServer {
 				isset($wpSiteUrl) ? $wpSiteUrl : '-',
 				http_build_query($query, '', '&')
 			);
+			$columns = $this->filterLogInfo($columns);
 
 			//Set the time zone to whatever the default is to avoid PHP notices.
 			//Will default to UTC if it's not set properly in php.ini.
@@ -234,6 +236,19 @@ class Wpup_UpdateServer {
 		if ( $handle ) {
 			fclose($handle);
 		}
+	}
+	
+	/**
+	 * Adjust information which will be logged
+	 *
+	 * Intended to be implemented in child classes
+	 *
+	 * @param array $columns Information to be logged
+	 *
+	 * @return array
+	 */
+	protected function filterLogInfo($columns) {
+		return $columns;
 	}
 
 	/**
