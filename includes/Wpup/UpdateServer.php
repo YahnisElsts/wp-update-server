@@ -74,7 +74,7 @@ class Wpup_UpdateServer {
 	/**
 	 * Process an update API request.
 	 *
-	 * @param array|null $query Query parameters. Defaults to the current request parameters (GET + POST).
+	 * @param array|null $query Query parameters. Defaults to the current GET request parameters.
 	 */
 	public function handleRequest($query = null) {
 		$this->startTime = microtime(true);
@@ -259,6 +259,7 @@ class Wpup_UpdateServer {
 
 			$columns = array(
 				isset($_SERVER['REMOTE_ADDR']) ? str_pad($_SERVER['REMOTE_ADDR'], 15, ' ') : '-',
+				isset($_SERVER['REQUEST_METHOD']) ? str_pad($_SERVER['REQUEST_METHOD'], 4, ' ') : '-',
 				isset($query['action'])            ? $query['action']            : '-',
 				isset($query['slug'])              ? $query['slug']              : '-',
 				isset($query['installed_version']) ? $query['installed_version'] : '-',
@@ -266,6 +267,7 @@ class Wpup_UpdateServer {
 				isset($wpSiteUrl) ? $wpSiteUrl : '-',
 				http_build_query($query, '', '&')
 			);
+			$columns = $this->filterLogInfo($columns);
 
 			//Set the time zone to whatever the default is to avoid PHP notices.
 			//Will default to UTC if it's not set properly in php.ini.
@@ -279,6 +281,17 @@ class Wpup_UpdateServer {
 		if ( $handle ) {
 			fclose($handle);
 		}
+	}
+	
+	/**
+	 * Adjust information that will be logged.
+	 * Intended to be overridden in child classes.
+	 *
+	 * @param array $columns List of columns in the log entry.
+	 * @return array
+	 */
+	protected function filterLogInfo($columns) {
+		return $columns;
 	}
 
 	/**
@@ -301,7 +314,7 @@ class Wpup_UpdateServer {
 	 * @param string $message Error message.
 	 * @param int $httpStatus Optional HTTP status code. Defaults to 500 (Internal Server Error).
 	 */
-	protected function exitWithError($message, $httpStatus = 500) {
+	protected function exitWithError($message = '', $httpStatus = 500) {
 		$statusMessages = array(
 			// This is not a full list of HTTP status messages. We only need the errors.
 			// [Client Error 4xx]
@@ -331,14 +344,24 @@ class Wpup_UpdateServer {
 			504 => '504 Gateway Timeout',
 			505 => '505 HTTP Version Not Supported'
 		);
+		
+		if ( !isset($_SERVER['SERVER_PROTOCOL']) || $_SERVER['SERVER_PROTOCOL'] === '' ) {
+			$protocol = 'HTTP/1.1';
+		} else {
+			$protocol = $_SERVER['SERVER_PROTOCOL'];
+		}
 
 		//Output a HTTP status header.
 		if ( isset($statusMessages[$httpStatus]) ) {
-			header('HTTP/1.1 ' . $statusMessages[$httpStatus]);
+			header($protocol . ' ' . $statusMessages[$httpStatus]);
 			$title = $statusMessages[$httpStatus];
 		} else {
 			header('X-Ws-Update-Server-Error: ' . $httpStatus, true, $httpStatus);
 			$title = 'HTTP ' . $httpStatus;
+		}
+		
+		if ( $message === '' ) {
+			$message = $title;
 		}
 
 		//And a basic HTML error message.
