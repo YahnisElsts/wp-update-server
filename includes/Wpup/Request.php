@@ -19,13 +19,13 @@ class Wpup_Request {
 	/** @var array Other, arbitrary request properties. */
 	protected $props = array();
 
-	public function __construct($query, $action, $slug = null, $package = null) {
+	public function __construct($query, $action, $slug = null, $package = null, $wpVersion = null, $wpSiteurl = null) {
 		$this->query = $query;
 		$this->action = $action;
 		$this->slug = $slug;
 		$this->package = $package;
-		$this->wpVersion = self::getWpVersion();
-		$this->wpSiteUrl = self::getWpSiteUrl();
+		$this->wpVersion = $wpVersion;
+		$this->wpSiteUrl = $wpSiteurl;
 	}
 
 	/**
@@ -60,40 +60,5 @@ class Wpup_Request {
 
 	public function __unset($name) {
 		unset($this->props[$name]);
-	}
-	
-	public static function getWpVersion() {
-		return self::_whoIsAsking('version');
-	}
-
-	public static function getWpSiteUrl() {
-		return self::_whoIsAsking('siteurl');
-	}
-
-	protected static function _whoIsAsking( $info ) {
-		static $wpVersion = null;
-		static $wpSiteUrl = null;
-		static $parsed    = false;
-		
-		if ( $parsed === false ) {
-			//If the request was made via the WordPress HTTP API we can usually
-			//get WordPress version and site URL from the user agent.
-			$regex = '@WordPress/(?P<version>\d[^;]*?);\s+(?P<url>https?://.+?)(?:\s|;|$)@i';
-			if ( isset($_SERVER['HTTP_USER_AGENT']) && preg_match($regex, $_SERVER['HTTP_USER_AGENT'], $matches) ) {
-				$wpVersion = $matches['version'];
-				$wpSiteUrl = $matches['url'];
-			}
-			$parsed = true;
-		}
-		
-		if ( $info==='version' ) {
-			return $wpVersion;
-		}
-		elseif ( $info==='siteurl' ) {
-			return $wpSiteUrl;
-		}
-		else {
-			return null;
-		}
 	}
 }
