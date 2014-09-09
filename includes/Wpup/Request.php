@@ -15,11 +15,11 @@ class Wpup_Request {
 	/** @var array Other, arbitrary request properties. */
 	protected $props = array();
 
-	public function __construct($query, $action, $slug = null, $package = null) {
+	public function __construct($query, $headers) {
 		$this->query = $query;
-		$this->action = $action;
-		$this->slug = $slug;
-		$this->package = $package;
+		$this->headers = new Wpup_Headers($headers);
+		$this->action = $this->param('action', '');
+		$this->slug = $this->param('slug', '');
 	}
 
 	/**

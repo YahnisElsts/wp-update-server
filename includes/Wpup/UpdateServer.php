@@ -30,15 +30,22 @@ class Wpup_UpdateServer {
 	 * Process an update API request.
 	 *
 	 * @param array|null $query Query parameters. Defaults to the current GET request parameters.
+	 * @param array|null $headers HTTP headers. Defaults to the headers received for the current request.
 	 */
-	public function handleRequest($query = null) {
+	public function handleRequest($query = null, $headers = null) {
 		$this->startTime = microtime(true);
 		if ( $query === null ) {
 			$query = $_GET;
 		}
-		$this->logRequest($query);
+		if ( $headers === null ) {
+			$headers = Wpup_Headers::parseCurrent();
+		}
 
-		$request = $this->initRequest($query);
+		$request = new Wpup_Request($query, $headers);
+		$this->logRequest($request);
+		//TODO: Find the package somewhere.
+
+		$this->initRequest($request);
 		$this->checkAuthorization($request);
 		$this->dispatch($request);
 		exit;
@@ -50,7 +57,7 @@ class Wpup_UpdateServer {
 	 * @param array $query
 	 * @return Wpup_Request
 	 */
-	protected function initRequest($query) {
+	protected function initRequest2($query) {
 		$action = isset($query['action']) ? strval($query['action']) : '';
 		if ( $action === '' ) {
 			$this->exitWithError('You must specify an action.', 400);
@@ -75,6 +82,35 @@ class Wpup_UpdateServer {
 		}
 
 		return new Wpup_Request($query, $action, $slug, $package);
+	}
+
+	/**
+	 * @param Wpup_Request $request
+	 */
+	protected function initRequest(Wpup_Request $request) {
+		if ( empty($request->action) ) {
+			$this->exitWithError('You must specify an action.', 400);
+		}
+		$slug = $request->slug;
+		if ( empty($slug) ) {
+			$this->exitWithError('You must specify a package slug.', 400);
+		}
+
+		try {
+			$package = $this->findPackage($slug);
+		} catch (Wpup_InvalidPackageException $ex) {
+			$this->exitWithError(sprintf(
+				'Package "%s" exists, but it is not a valid plugin or theme. ' .
+				'Make sure it has the right format (Zip) and directory structure.',
+				htmlentities($slug)
+			));
+			exit;
+		}
+		if ( $package === null ) {
+			$this->exitWithError(sprintf('Package "%s" not found', htmlentities($slug)), 404);
+		}
+
+		$request->package = $package;
 	}
 
 	/**
@@ -196,9 +232,10 @@ class Wpup_UpdateServer {
 	/**
 	 * Log an API request.
 	 *
-	 * @param array $query Query arguments.
+	 * @param Wpup_Request $request
 	 */
-	protected function logRequest($query) {
+	protected function logRequest($request) {
+		//TODO: Use the new request class version.
 		$logFile = $this->logDirectory . '/request.log';
 		$handle = fopen($logFile, 'a');
 		if ( $handle && flock($handle, LOCK_EX) ) {
