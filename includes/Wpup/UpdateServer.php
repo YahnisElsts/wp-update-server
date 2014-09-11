@@ -301,9 +301,13 @@ class Wpup_UpdateServer {
 	 */
 	protected function outputAsJson($response) {
 		header('Content-Type: application/json');
-		$output = json_encode($response);
-		if ( function_exists('wsh_pretty_json') ) {
-			$output = wsh_pretty_json($output);
+		$output = '';
+		if ( defined('JSON_PRETTY_PRINT') ) {
+			$output = json_encode($response, JSON_PRETTY_PRINT);
+		} elseif ( function_exists('wsh_pretty_json') ) {
+			$output = wsh_pretty_json(json_encode($response));
+		} else {
+			$output = json_encode($response);
 		}
 		echo $output;
 	}
