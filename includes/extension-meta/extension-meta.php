@@ -282,13 +282,13 @@ class WshWordPressPackageParser {
 		$headers['Title'] = $headers['Name'];
 		
 		//"Depends" is a comma-separated list. Convert it to an array.
-		if ( !empty($headers['depends']) ){
-			$headers['depends'] = array_map('trim', explode(',', $headers['depends']));
+		if ( !empty($headers['Depends']) ){
+			$headers['Depends'] = array_map('trim', explode(',', $headers['Depends']));
 		}
 
 		//Same for "Provides"
-		if ( !empty($headers['provides']) ){
-			$headers['provides'] = array_map('trim', explode(',', $headers['provides']));
+		if ( !empty($headers['Provides']) ){
+			$headers['Provides'] = array_map('trim', explode(',', $headers['Provides']));
 		}
 
 		//If it doesn't have a name, it's probably not a plugin.
