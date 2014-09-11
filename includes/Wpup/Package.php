@@ -122,6 +122,9 @@ class Wpup_Package {
 			    'Author' => 'author',
 			    'AuthorURI' => 'author_homepage',
 			    'DetailsURI' => 'details_url', //Only for themes.
+				'Depends' => 'depends', // plugin-dependencies plugin
+				'Provides' => 'provides', // plugin-dependencies plugin
+
 			);
 			foreach($mapping as $headerField => $metaField){
 				if ( array_key_exists($headerField, $packageInfo['header']) && !empty($packageInfo['header'][$headerField]) ){
@@ -141,8 +144,6 @@ class Wpup_Package {
 			$mapping = array(
 				'requires',
 				'tested',
-				'depends',
-				'provides',
 			);
 			foreach($mapping as $readmeField){
 				if ( !empty($packageInfo['readme'][$readmeField]) ){
