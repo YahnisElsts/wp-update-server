@@ -11,7 +11,7 @@ class Wpup_UpdateServer {
 			$serverDirectory = realpath(__DIR__ . '/../..');
 		}
 		if ( $serverUrl === null ) {
-			$serverUrl = self::determineServerUrl();
+			$serverUrl = self::guessServerUrl();
 		}
 
 		$this->serverUrl = $serverUrl;
@@ -21,7 +21,7 @@ class Wpup_UpdateServer {
 	}
 
 	/**
-	 * Determine the Server Url based on the current request.
+	 * Guess the Server Url based on the current request.
 	 *
 	 * Defaults to the current URL minus the query and "index.php".
 	 *
@@ -29,7 +29,7 @@ class Wpup_UpdateServer {
 	 *
 	 * @return string Url
 	 */
-	public static function determineServerUrl() {
+	public static function guessServerUrl() {
 		$serverUrl = ( self::isSsl() ? 'https' : 'http' );
 		$serverUrl .= '://' . $_SERVER['HTTP_HOST'];
 		$path = $_SERVER['SCRIPT_NAME'];
@@ -64,8 +64,7 @@ class Wpup_UpdateServer {
 			if ( $_SERVER['HTTPS'] == '1' || strtolower($_SERVER['HTTPS']) === 'on' ) {
 				return true;
 			}
-		}
-		elseif ( isset($_SERVER['SERVER_PORT']) && ( '443' == $_SERVER['SERVER_PORT'] ) ) {
+		} elseif ( isset($_SERVER['SERVER_PORT']) && ( '443' == $_SERVER['SERVER_PORT'] ) ) {
 			return true;
 		}
 		return false;
@@ -389,7 +388,7 @@ class Wpup_UpdateServer {
 	 */
 	protected static function addQueryArg($args, $url = null ) {
 		if ( !isset($url) ) {
-			$url = self::determineServerUrl();
+			$url = self::guessServerUrl();
 		}
 		if ( strpos($url, '?') !== false ) {
 			$parts = explode('?', $url, 2);
