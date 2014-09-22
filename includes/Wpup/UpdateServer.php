@@ -34,83 +34,74 @@ class Wpup_UpdateServer {
 	 */
 	public function handleRequest($query = null, $headers = null) {
 		$this->startTime = microtime(true);
-		if ( $query === null ) {
-			$query = $_GET;
-		}
-		if ( $headers === null ) {
-			$headers = Wpup_Headers::parseCurrent();
-		}
 
-		$request = new Wpup_Request($query, $headers);
+		$request = $this->initRequest($query, $headers);
 		$this->logRequest($request);
-		//TODO: Find the package somewhere.
 
-		$this->initRequest($request);
+		$this->loadPackageFor($request);
+		$this->validateRequest($request);
 		$this->checkAuthorization($request);
 		$this->dispatch($request);
 		exit;
 	}
 
 	/**
-	 * Parse an API request and perform some basic validation.
+	 * Set up a request instance.
 	 *
 	 * @param array $query
+	 * @param array $headers
 	 * @return Wpup_Request
 	 */
-	protected function initRequest2($query) {
-		$action = isset($query['action']) ? strval($query['action']) : '';
-		if ( $action === '' ) {
-			$this->exitWithError('You must specify an action.', 400);
+	protected function initRequest($query = null, $headers = null) {
+		if ( $query === null ) {
+			$query = $_GET;
 		}
-		$slug = isset($query['slug']) ? strval($query['slug']) : '';
-		if ( $slug === '' ) {
-			$this->exitWithError('You must specify a package slug.', 400);
+		if ( $headers === null ) {
+			$headers = Wpup_Headers::parseCurrent();
 		}
+		$clientIp = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : '0.0.0.0';
+		$httpMethod = isset($_SERVER['REQUEST_METHOD']) ? $_SERVER['REQUEST_METHOD'] : 'GET';
 
-		try {
-			$package = $this->findPackage($slug);
-		} catch (Wpup_InvalidPackageException $ex) {
-			$this->exitWithError(sprintf(
-				'Package "%s" exists, but it is not a valid plugin or theme. ' .
-				'Make sure it has the right format (Zip) and directory structure.',
-				htmlentities($slug)
-			));
-			exit;
-		}
-		if ( $package === null ) {
-			$this->exitWithError(sprintf('Package "%s" not found', htmlentities($slug)), 404);
-		}
-
-		return new Wpup_Request($query, $action, $slug, $package);
+		return new Wpup_Request($query, $headers, $clientIp, $httpMethod);
 	}
 
 	/**
+	 * Load the requested package into the request instance.
+	 *
 	 * @param Wpup_Request $request
 	 */
-	protected function initRequest(Wpup_Request $request) {
-		if ( empty($request->action) ) {
-			$this->exitWithError('You must specify an action.', 400);
-		}
-		$slug = $request->slug;
-		if ( empty($slug) ) {
-			$this->exitWithError('You must specify a package slug.', 400);
+	protected function loadPackageFor($request) {
+		if ( empty($request->slug) ) {
+			return;
 		}
 
 		try {
-			$package = $this->findPackage($slug);
+			$request->package = $this->findPackage($request->slug);
 		} catch (Wpup_InvalidPackageException $ex) {
 			$this->exitWithError(sprintf(
 				'Package "%s" exists, but it is not a valid plugin or theme. ' .
 				'Make sure it has the right format (Zip) and directory structure.',
-				htmlentities($slug)
+				htmlentities($request->slug)
 			));
 			exit;
 		}
-		if ( $package === null ) {
-			$this->exitWithError(sprintf('Package "%s" not found', htmlentities($slug)), 404);
-		}
+	}
 
-		$request->package = $package;
+	/**
+	 * Basic request validation. Every request must specify an action and a valid package slug.
+	 *
+	 * @param Wpup_Request $request
+	 */
+	protected function validateRequest($request) {
+		if ( $request->action === '' ) {
+			$this->exitWithError('You must specify an action.', 400);
+		}
+		if ( $request->slug === '' ) {
+			$this->exitWithError('You must specify a package slug.', 400);
+		}
+		if ( $request->package === null ) {
+			$this->exitWithError(sprintf('Package "%s" not found', htmlentities($request->slug)), 404);
+		}
 	}
 
 	/**
@@ -235,29 +226,19 @@ class Wpup_UpdateServer {
 	 * @param Wpup_Request $request
 	 */
 	protected function logRequest($request) {
-		//TODO: Use the new request class version.
 		$logFile = $this->logDirectory . '/request.log';
 		$handle = fopen($logFile, 'a');
 		if ( $handle && flock($handle, LOCK_EX) ) {
 
-			//If the request was made via the WordPress HTTP API we can usually
-			//get WordPress version and site URL from the user agent.
-			$wpVersion = $wpSiteUrl = null;
-			$regex = '@WordPress/(?P<version>\d[^;]*?);\s+(?P<url>https?://.+?)(?:\s|;|$)@i';
-			if ( isset($_SERVER['HTTP_USER_AGENT']) && preg_match($regex, $_SERVER['HTTP_USER_AGENT'], $matches) ) {
-				$wpVersion = $matches['version'];
-				$wpSiteUrl = $matches['url'];
-			}
-
 			$columns = array(
-				isset($_SERVER['REMOTE_ADDR']) ? str_pad($_SERVER['REMOTE_ADDR'], 15, ' ') : '-',
-				isset($_SERVER['REQUEST_METHOD']) ? str_pad($_SERVER['REQUEST_METHOD'], 4, ' ') : '-',
-				isset($query['action']) ? $query['action'] : '-',
-				isset($query['slug'])   ? $query['slug']   : '-',
-				isset($query['installed_version']) ? $query['installed_version'] : '-',
-				isset($wpVersion) ? $wpVersion : '-',
-				isset($wpSiteUrl) ? $wpSiteUrl : '-',
-				http_build_query($query, '', '&')
+				str_pad($request->clientIp,  15, ' '),
+				str_pad($request->httpMethod, 4, ' '),
+				$request->param('action', '-'),
+				$request->param('slug', '-'),
+				$request->param('installed_version', '-'),
+				isset($request->wpVersion) ? $request->wpVersion : '-',
+				isset($request->wpSiteUrl) ? $request->wpSiteUrl : '-',
+				http_build_query($request->query, '', '&')
 			);
 			$columns = $this->filterLogInfo($columns);
 
@@ -274,7 +255,7 @@ class Wpup_UpdateServer {
 			fclose($handle);
 		}
 	}
-	
+
 	/**
 	 * Adjust information that will be logged.
 	 * Intended to be overridden in child classes.
