@@ -123,12 +123,14 @@ class Wpup_Package {
 		if ( isset($packageInfo['header']) && !empty($packageInfo['header']) ){
 			$mapping = array(
 				'Name' => 'name',
-			    'Version' => 'version',
-			    'PluginURI' => 'homepage',
-			    'ThemeURI' => 'homepage',
-			    'Author' => 'author',
-			    'AuthorURI' => 'author_homepage',
-			    'DetailsURI' => 'details_url', //Only for themes.
+				'Version' => 'version',
+				'PluginURI' => 'homepage',
+				'ThemeURI' => 'homepage',
+				'Author' => 'author',
+				'AuthorURI' => 'author_homepage',
+				'DetailsURI' => 'details_url', //Only for themes.
+				'Depends' => 'depends', // plugin-dependencies plugin
+				'Provides' => 'provides', // plugin-dependencies plugin
 			);
 			foreach($mapping as $headerField => $metaField){
 				if ( array_key_exists($headerField, $packageInfo['header']) && !empty($packageInfo['header'][$headerField]) ){
@@ -145,7 +147,10 @@ class Wpup_Package {
 		}
 
 		if ( !empty($packageInfo['readme']) ){
-			$mapping = array('requires', 'tested');
+			$mapping = array(
+				'requires',
+				'tested',
+			);
 			foreach($mapping as $readmeField){
 				if ( !empty($packageInfo['readme'][$readmeField]) ){
 					$meta[$readmeField] = $packageInfo['readme'][$readmeField];
