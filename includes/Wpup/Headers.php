@@ -35,7 +35,7 @@ class Wpup_Headers implements ArrayAccess, IteratorAggregate, Countable {
 			$key = strtoupper($key);
 			if ( self::isHeaderName($key) ) {
 				//Remove the "HTTP_" prefix that PHP adds to headers stored in $_SERVER.
-				$key = preg_replace('/^http[_\-]/i', '', $key);
+				$key = preg_replace('/^HTTP[_-]/', '', $key);
 				$results[$key] = $value;
 			}
 		}
