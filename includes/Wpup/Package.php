@@ -64,7 +64,7 @@ class Wpup_Package {
 	 * @return Wpup_Package
 	 */
 	public static function fromArchive($filename, $slug = null, Wpup_Cache $cache = null) {
-		$metaObj = new Wpup_Metadata($filename, $cache);
+		$metaObj = new Wpup_Metadata($slug, $filename, $cache);
 		$metadata = $metaObj->get();
 
 		if ( $slug === null ) {

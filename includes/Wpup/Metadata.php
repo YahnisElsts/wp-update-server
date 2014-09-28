@@ -42,6 +42,11 @@ class Wpup_Metadata {
 	 * @var string Path to the Zip archive that contains the plugin or theme.
 	 */
 	protected $filename;
+	
+	/**
+	 * @var string Plugin or theme slug.
+	 */
+	public $slug;
 
 	/**
 	 * @var Wpup_Cache Cache object.
@@ -57,10 +62,12 @@ class Wpup_Metadata {
 	/**
 	 * Get the metadata from a zip file.
 	 *
+	 * @param string $slug
 	 * @param string $filename
 	 * @param Wpup_Cache $cache
 	 */
-	public function __construct($filename, Wpup_Cache $cache = null) {
+	public function __construct($slug, $filename, Wpup_Cache $cache = null) {
+		$this->slug = $slug;
 		$this->filename = $filename;
 		$this->cache = $cache;
 
@@ -87,7 +94,7 @@ class Wpup_Metadata {
 	 */
 	public function setMetadataFromArchive() {
 		$modified = filemtime($this->filename);
-		$cacheKey = 'metadata-' . md5($this->filename . '|' . filesize($this->filename) . '|' . $modified);
+		$cacheKey = 'metadata-' . $this->slug . '-' . md5($this->filename . '|' . filesize($this->filename) . '|' . $modified);
 		$metadata = null;
 
 		//Try the cache first.
@@ -166,7 +173,7 @@ class Wpup_Metadata {
 		}
 
 		if ( !isset($meta['last_updated']) ) {
-			$meta['last_updated'] = gmdate('Y-m-d H:i:s', filemtime($zipFilename));
+			$meta['last_updated'] = gmdate('Y-m-d H:i:s', filemtime($this->filename));
 		}
 
 		$mainFile = $this->packageInfo['type'] === 'plugin' ? $this->packageInfo['pluginFile'] : $this->packageInfo['stylesheet'];
