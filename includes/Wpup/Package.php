@@ -9,7 +9,7 @@
  * file and store the actual download elsewhere - or even generate it on the fly.
  */
 class Wpup_Package {
-	
+
 	/** @var string Path to the Zip archive that contains the plugin or theme. */
 	protected $filename;
 

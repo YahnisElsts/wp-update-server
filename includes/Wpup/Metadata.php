@@ -32,6 +32,7 @@ class Wpup_Metadata {
 		'requires',
 		'tested',
 	);
+
 	/**
 	 * @var string Path to the Zip archive that contains the plugin or theme.
 	 */
@@ -57,7 +58,7 @@ class Wpup_Metadata {
 	public function __construct($filename, Wpup_Cache $cache = null) {
 		$this->filename = $filename;
 		$this->cache = $cache;
-		
+
 		$this->setMetadataFromArchive();
 	}
 
