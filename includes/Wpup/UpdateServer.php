@@ -224,15 +224,25 @@ class Wpup_UpdateServer {
 	}
 
 	/**
-	 * Create a download URL for a plugin.
+	 * Create a download URL for a plugin based on a package object.
 	 *
 	 * @param Wpup_Package $package
 	 * @return string URL
 	 */
 	protected function generateDownloadUrl(Wpup_Package $package) {
+		return $this->getDownloadUrl($package->slug);
+	}
+	
+	/**
+	 * Create a download URL for a plugin based on a slug.
+	 *
+	 * @param string $slug
+	 * @return string URL
+	 */
+	public function getDownloadUrl($slug) {
 		$query = array(
 			'action' => 'download',
-			'slug' => $package->slug,
+			'slug' => $slug,
 		);
 		return self::addQueryArg($query, $this->serverUrl);
 	}
