@@ -20,4 +20,12 @@ interface Wpup_Cache {
 	 * @return void
 	 */
 	function set($key, $value, $expiration = 0);
+
+	/**
+	 * Clear a cache
+	 *
+	 * @param string $key Cache key.
+	 * @return void
+	 */
+	function clear($key);
 }

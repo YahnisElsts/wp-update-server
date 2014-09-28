@@ -9,6 +9,13 @@
  * file and store the actual download elsewhere - or even generate it on the fly.
  */
 class Wpup_Package {
+	
+	/**
+	 * @var int $cacheTime  How long the package metadata should be cached in seconds.
+	 *                       Defaults to 1 week ( 7 * 24 * 60 * 60 ).
+	 */
+	public static $cacheTime = 604800;
+
 	/** @var string Path to the Zip archive that contains the plugin or theme. */
 	protected $filename;
 
@@ -79,14 +86,14 @@ class Wpup_Package {
 		if ( !isset($metadata) || !is_array($metadata) ) {
 			$metadata = self::extractMetadata($filename);
 			if ( $metadata === null ) {
-				throw new Wpup_InvalidPackageException('The specified file does not contain a valid WordPress plugin or theme.');
+				throw new Wpup_InvalidPackageException( sprintf('The specified file %s does not contain a valid WordPress plugin or theme.', $filename));
 			}
 			$metadata['last_updated'] = gmdate('Y-m-d H:i:s', $modified);
 		}
 
 		//Update cache.
 		if ( isset($cache) ) {
-			$cache->set($cacheKey, $metadata, 7 * 24 * 3600);
+			$cache->set($cacheKey, $metadata, self::$cacheTime);
 		}
 		if ( $slug === null ) {
 			$slug = $metadata['slug'];
@@ -116,12 +123,14 @@ class Wpup_Package {
 		if ( isset($packageInfo['header']) && !empty($packageInfo['header']) ){
 			$mapping = array(
 				'Name' => 'name',
-			    'Version' => 'version',
-			    'PluginURI' => 'homepage',
-			    'ThemeURI' => 'homepage',
-			    'Author' => 'author',
-			    'AuthorURI' => 'author_homepage',
-			    'DetailsURI' => 'details_url', //Only for themes.
+				'Version' => 'version',
+				'PluginURI' => 'homepage',
+				'ThemeURI' => 'homepage',
+				'Author' => 'author',
+				'AuthorURI' => 'author_homepage',
+				'DetailsURI' => 'details_url', //Only for themes.
+				'Depends' => 'depends', // plugin-dependencies plugin
+				'Provides' => 'provides', // plugin-dependencies plugin
 			);
 			foreach($mapping as $headerField => $metaField){
 				if ( array_key_exists($headerField, $packageInfo['header']) && !empty($packageInfo['header'][$headerField]) ){
@@ -138,7 +147,10 @@ class Wpup_Package {
 		}
 
 		if ( !empty($packageInfo['readme']) ){
-			$mapping = array('requires', 'tested');
+			$mapping = array(
+				'requires',
+				'tested',
+			);
 			foreach($mapping as $readmeField){
 				if ( !empty($packageInfo['readme'][$readmeField]) ){
 					$meta[$readmeField] = $packageInfo['readme'][$readmeField];

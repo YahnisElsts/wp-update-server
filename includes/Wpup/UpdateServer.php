@@ -11,13 +11,7 @@ class Wpup_UpdateServer {
 			$serverDirectory = realpath(__DIR__ . '/../..');
 		}
 		if ( $serverUrl === null ) {
-			//Default to the current URL minus the query and "index.php".
-			$serverUrl = 'http://' . $_SERVER['HTTP_HOST'];
-			$path = $_SERVER['SCRIPT_NAME'];
-			if ( basename($path) === 'index.php' ) {
-				$path = dirname($path) . '/';
-			}
-			$serverUrl .= $path;
+			$serverUrl = self::guessServerUrl();
 		}
 
 		$this->serverUrl = $serverUrl;
@@ -27,9 +21,59 @@ class Wpup_UpdateServer {
 	}
 
 	/**
+	 * Guess the Server Url based on the current request.
+	 *
+	 * Defaults to the current URL minus the query and "index.php".
+	 *
+	 * @static
+	 *
+	 * @return string Url
+	 */
+	public static function guessServerUrl() {
+		$serverUrl = ( self::isSsl() ? 'https' : 'http' );
+		$serverUrl .= '://' . $_SERVER['HTTP_HOST'];
+		$path = $_SERVER['SCRIPT_NAME'];
+
+		if ( basename($path) === 'index.php' ) {
+			$dir = dirname($path);
+			if ( DIRECTORY_SEPARATOR === '/' ) {
+				$path = $dir . '/';
+			} else {
+				// Fix Windows
+				$path = str_replace('\\', '/', $dir);
+				//Make sure there's a trailing slash.
+				if ( substr($path, -1) !== '/' ) {
+					$path .= '/';
+				}
+			}
+		}
+
+		$serverUrl .= $path;
+		return $serverUrl;
+	}
+
+	/**
+	 * Determine if ssl is used.
+	 *
+	 * @see WP core - wp-includes/functions.php
+	 *
+	 * @return bool True if SSL, false if not used.
+	 */
+	public static function isSsl() {
+		if ( isset($_SERVER['HTTPS']) ) {
+			if ( $_SERVER['HTTPS'] == '1' || strtolower($_SERVER['HTTPS']) === 'on' ) {
+				return true;
+			}
+		} elseif ( isset($_SERVER['SERVER_PORT']) && ( '443' == $_SERVER['SERVER_PORT'] ) ) {
+			return true;
+		}
+		return false;
+	}
+
+	/**
 	 * Process an update API request.
 	 *
-	 * @param array|null $query Query parameters. Defaults to the current request parameters (GET + POST).
+	 * @param array|null $query Query parameters. Defaults to the current GET request parameters.
 	 */
 	public function handleRequest($query = null) {
 		$this->startTime = microtime(true);
@@ -214,13 +258,15 @@ class Wpup_UpdateServer {
 
 			$columns = array(
 				isset($_SERVER['REMOTE_ADDR']) ? str_pad($_SERVER['REMOTE_ADDR'], 15, ' ') : '-',
-				isset($query['action']) ? $query['action'] : '-',
-				isset($query['slug'])   ? $query['slug']   : '-',
+				isset($_SERVER['REQUEST_METHOD']) ? str_pad($_SERVER['REQUEST_METHOD'], 4, ' ') : '-',
+				isset($query['action'])            ? $query['action']            : '-',
+				isset($query['slug'])              ? $query['slug']              : '-',
 				isset($query['installed_version']) ? $query['installed_version'] : '-',
 				isset($wpVersion) ? $wpVersion : '-',
 				isset($wpSiteUrl) ? $wpSiteUrl : '-',
 				http_build_query($query, '', '&')
 			);
+			$columns = $this->filterLogInfo($columns);
 
 			//Set the time zone to whatever the default is to avoid PHP notices.
 			//Will default to UTC if it's not set properly in php.ini.
@@ -235,6 +281,17 @@ class Wpup_UpdateServer {
 			fclose($handle);
 		}
 	}
+	
+	/**
+	 * Adjust information that will be logged.
+	 * Intended to be overridden in child classes.
+	 *
+	 * @param array $columns List of columns in the log entry.
+	 * @return array
+	 */
+	protected function filterLogInfo($columns) {
+		return $columns;
+	}
 
 	/**
 	 * Output something as JSON.
@@ -243,9 +300,13 @@ class Wpup_UpdateServer {
 	 */
 	protected function outputAsJson($response) {
 		header('Content-Type: application/json');
-		$output = json_encode($response);
-		if ( function_exists('wsh_pretty_json') ) {
-			$output = wsh_pretty_json($output);
+		$output = '';
+		if ( defined('JSON_PRETTY_PRINT') ) {
+			$output = json_encode($response, JSON_PRETTY_PRINT);
+		} elseif ( function_exists('wsh_pretty_json') ) {
+			$output = wsh_pretty_json(json_encode($response));
+		} else {
+			$output = json_encode($response);
 		}
 		echo $output;
 	}
@@ -256,7 +317,7 @@ class Wpup_UpdateServer {
 	 * @param string $message Error message.
 	 * @param int $httpStatus Optional HTTP status code. Defaults to 500 (Internal Server Error).
 	 */
-	protected function exitWithError($message, $httpStatus = 500) {
+	protected function exitWithError($message = '', $httpStatus = 500) {
 		$statusMessages = array(
 			// This is not a full list of HTTP status messages. We only need the errors.
 			// [Client Error 4xx]
@@ -286,14 +347,24 @@ class Wpup_UpdateServer {
 			504 => '504 Gateway Timeout',
 			505 => '505 HTTP Version Not Supported'
 		);
+		
+		if ( !isset($_SERVER['SERVER_PROTOCOL']) || $_SERVER['SERVER_PROTOCOL'] === '' ) {
+			$protocol = 'HTTP/1.1';
+		} else {
+			$protocol = $_SERVER['SERVER_PROTOCOL'];
+		}
 
 		//Output a HTTP status header.
 		if ( isset($statusMessages[$httpStatus]) ) {
-			header('HTTP/1.1 ' . $statusMessages[$httpStatus]);
+			header($protocol . ' ' . $statusMessages[$httpStatus]);
 			$title = $statusMessages[$httpStatus];
 		} else {
 			header('X-Ws-Update-Server-Error: ' . $httpStatus, true, $httpStatus);
 			$title = 'HTTP ' . $httpStatus;
+		}
+		
+		if ( $message === '' ) {
+			$message = $title;
 		}
 
 		//And a basic HTML error message.
@@ -312,10 +383,13 @@ class Wpup_UpdateServer {
 	 * You can also set an argument to NULL to remove it.
 	 *
 	 * @param array $args An associative array of query arguments.
-	 * @param string $url The old URL.
+	 * @param string $url The old URL. Optional, defaults to the request url without query arguments.
 	 * @return string New URL.
 	 */
-	protected static function addQueryArg($args, $url) {
+	protected static function addQueryArg($args, $url = null ) {
+		if ( !isset($url) ) {
+			$url = self::guessServerUrl();
+		}
 		if ( strpos($url, '?') !== false ) {
 			$parts = explode('?', $url, 2);
 			$base = $parts[0] . '?';
