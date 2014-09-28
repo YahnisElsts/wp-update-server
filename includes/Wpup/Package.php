@@ -10,12 +10,6 @@
  */
 class Wpup_Package {
 	
-	/**
-	 * @var int $cacheTime  How long the package metadata should be cached in seconds.
-	 *                       Defaults to 1 week ( 7 * 24 * 60 * 60 ).
-	 */
-	public static $cacheTime = 604800;
-
 	/** @var string Path to the Zip archive that contains the plugin or theme. */
 	protected $filename;
 
@@ -62,125 +56,22 @@ class Wpup_Package {
 	}
 
 	/**
-	 * Load package information from a Zip archive.
-	 *
-	 * We'll try to load processed metadata from the cache first (if available), and if that
-	 * fails we'll extract plugin/theme details from the specified Zip file.
+	 * Load package information.
 	 *
 	 * @param string $filename Path to a Zip archive that contains a WP plugin or theme.
 	 * @param string $slug Optional plugin or theme slug. Will be detected automatically.
 	 * @param Wpup_Cache $cache
-	 * @throws Wpup_InvalidPackageException if the input file can't be parsed as a plugin or theme.
 	 * @return Wpup_Package
 	 */
 	public static function fromArchive($filename, $slug = null, Wpup_Cache $cache = null) {
-		$modified = filemtime($filename);
-		$cacheKey = 'metadata-' . md5($filename . '|' . filesize($filename) . '|' . $modified);
-		$metadata = null;
+		$metaObj = new Wpup_Metadata($filename, $cache);
+		$metadata = $metaObj->get();
 
-		//Try the cache first.
-		if ( isset($cache) ) {
-			$metadata = $cache->get($cacheKey);
-		}
-
-		if ( !isset($metadata) || !is_array($metadata) ) {
-			$metadata = self::extractMetadata($filename);
-			if ( $metadata === null ) {
-				throw new Wpup_InvalidPackageException( sprintf('The specified file %s does not contain a valid WordPress plugin or theme.', $filename));
-			}
-			$metadata['last_updated'] = gmdate('Y-m-d H:i:s', $modified);
-		}
-
-		//Update cache.
-		if ( isset($cache) ) {
-			$cache->set($cacheKey, $metadata, self::$cacheTime);
-		}
 		if ( $slug === null ) {
 			$slug = $metadata['slug'];
 		}
 
 		return new self($slug, $filename, $metadata);
-	}
-
-	/**
-	 * Extract plugin or theme headers and readme contents from a ZIP file and convert them
-	 * into a structure compatible with the custom update checker.
-	 *
-	 * See this page for an overview of the plugin metadata format:
-	 * @link https://spreadsheets.google.com/pub?key=0AqP80E74YcUWdEdETXZLcXhjd2w0cHMwX2U1eDlWTHc&authkey=CK7h9toK&hl=en&single=true&gid=0&output=html
-	 *
-	 * @param string $zipFilename
-	 * @return array An associative array of metadata fields, or NULL if the input file doesn't appear to be a valid plugin/theme archive.
-	 */
-	public static function extractMetadata($zipFilename){
-		$packageInfo = WshWordPressPackageParser::parsePackage($zipFilename, true);
-		if ( $packageInfo === false ) {
-			return null;
-		}
-
-		$meta = array();
-
-		if ( isset($packageInfo['header']) && !empty($packageInfo['header']) ){
-			$mapping = array(
-				'Name' => 'name',
-				'Version' => 'version',
-				'PluginURI' => 'homepage',
-				'ThemeURI' => 'homepage',
-				'Author' => 'author',
-				'AuthorURI' => 'author_homepage',
-				'DetailsURI' => 'details_url', //Only for themes.
-				'Depends' => 'depends', // plugin-dependencies plugin
-				'Provides' => 'provides', // plugin-dependencies plugin
-			);
-			foreach($mapping as $headerField => $metaField){
-				if ( array_key_exists($headerField, $packageInfo['header']) && !empty($packageInfo['header'][$headerField]) ){
-					$meta[$metaField] = $packageInfo['header'][$headerField];
-				}
-			}
-
-			//Theme metadata should include a "details_url" that specifies the page to display
-			//when the user clicks "View version x.y.z details". If the developer didn't provide
-			//it by setting the "Details URI" header, we'll default to the theme homepage ("Theme URI").
-			if ( $packageInfo['type'] === 'theme' &&  !isset($meta['details_url']) && isset($meta['homepage']) ) {
-				$meta['details_url'] = $meta['homepage'];
-			}
-		}
-
-		if ( !empty($packageInfo['readme']) ){
-			$mapping = array(
-				'requires',
-				'tested',
-			);
-			foreach($mapping as $readmeField){
-				if ( !empty($packageInfo['readme'][$readmeField]) ){
-					$meta[$readmeField] = $packageInfo['readme'][$readmeField];
-				}
-			}
-			if ( !empty($packageInfo['readme']['sections']) && is_array($packageInfo['readme']['sections']) ){
-				foreach($packageInfo['readme']['sections'] as $sectionName => $sectionContent){
-					$sectionName = str_replace(' ', '_', strtolower($sectionName));
-					$meta['sections'][$sectionName] = $sectionContent;
-				}
-			}
-
-			//Check if we have an upgrade notice for this version
-			if ( isset($meta['sections']['upgrade_notice']) && isset($meta['version']) ){
-				$regex = "@<h4>\s*" . preg_quote($meta['version']) . "\s*</h4>[^<>]*?<p>(.+?)</p>@i";
-				if ( preg_match($regex, $meta['sections']['upgrade_notice'], $matches) ){
-					$meta['upgrade_notice'] = trim(strip_tags($matches[1]));
-				}
-			}
-		}
-
-		if ( !isset($meta['last_updated']) ) {
-			$meta['last_updated'] = gmdate('Y-m-d H:i:s', filemtime($zipFilename));
-		}
-
-		$mainFile = $packageInfo['type'] === 'plugin' ? $packageInfo['pluginFile'] : $packageInfo['stylesheet'];
-		$meta['slug'] = basename(dirname(strtolower($mainFile)));
-		//Idea: Warn the user if the package doesn't match the expected "/slug/other-files" layout.
-
-		return $meta;
 	}
 
 	/**
