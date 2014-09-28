@@ -8,7 +8,7 @@ class Wpup_Metadata {
 	 * @var int $cacheTime  How long the package metadata should be cached in seconds.
 	 *                      Defaults to 1 week ( 7 * 24 * 60 * 60 ).
 	 */
-	protected $cacheTime = 604800;
+	public static $cacheTime = 604800;
 
 	/**
 	 * @var array Plugin PHP header mapping, i.e. which tags to add to the metadata under which array key
@@ -100,7 +100,7 @@ class Wpup_Metadata {
 
 		//Update cache.
 		if ( isset($this->cache) ) {
-			$this->cache->set($cacheKey, $metadata, $this->cacheTime);
+			$this->cache->set($cacheKey, $metadata, self::$cacheTime);
 		}
 
 		$this->metadata = $metadata;
