@@ -32,6 +32,11 @@ class Wpup_Metadata {
 		'requires',
 		'tested',
 	);
+	
+	/**
+	 * @var array Package info as retrieved by the parser
+	 */
+	protected $packageInfo;
 
 	/**
 	 * @var string Path to the Zip archive that contains the plugin or theme.
@@ -116,36 +121,36 @@ class Wpup_Metadata {
 	 * @return array An associative array of metadata fields, or NULL if the input file doesn't appear to be a valid plugin/theme archive.
 	 */
 	protected function extractMetadata(){
-		$packageInfo = WshWordPressPackageParser::parsePackage($this->filename, true);
-		if ( $packageInfo === false ) {
+		$this->packageInfo = WshWordPressPackageParser::parsePackage($this->filename, true);
+		if ( $this->packageInfo === false ) {
 			return null;
 		}
 
 		$meta = array();
 
-		if ( isset($packageInfo['header']) && !empty($packageInfo['header']) ){
+		if ( isset($this->packageInfo['header']) && !empty($this->packageInfo['header']) ){
 			foreach($this->headerMap as $headerField => $metaField){
-				if ( array_key_exists($headerField, $packageInfo['header']) && !empty($packageInfo['header'][$headerField]) ){
-					$meta[$metaField] = $packageInfo['header'][$headerField];
+				if ( array_key_exists($headerField, $this->packageInfo['header']) && !empty($this->packageInfo['header'][$headerField]) ){
+					$meta[$metaField] = $this->packageInfo['header'][$headerField];
 				}
 			}
 
 			//Theme metadata should include a "details_url" that specifies the page to display
 			//when the user clicks "View version x.y.z details". If the developer didn't provide
 			//it by setting the "Details URI" header, we'll default to the theme homepage ("Theme URI").
-			if ( $packageInfo['type'] === 'theme' &&  !isset($meta['details_url']) && isset($meta['homepage']) ) {
+			if ( $this->packageInfo['type'] === 'theme' &&  !isset($meta['details_url']) && isset($meta['homepage']) ) {
 				$meta['details_url'] = $meta['homepage'];
 			}
 		}
 
-		if ( !empty($packageInfo['readme']) ){
+		if ( !empty($this->packageInfo['readme']) ){
 			foreach($this->readmeMap as $readmeField){
-				if ( !empty($packageInfo['readme'][$readmeField]) ){
-					$meta[$readmeField] = $packageInfo['readme'][$readmeField];
+				if ( !empty($this->packageInfo['readme'][$readmeField]) ){
+					$meta[$readmeField] = $this->packageInfo['readme'][$readmeField];
 				}
 			}
-			if ( !empty($packageInfo['readme']['sections']) && is_array($packageInfo['readme']['sections']) ){
-				foreach($packageInfo['readme']['sections'] as $sectionName => $sectionContent){
+			if ( !empty($this->packageInfo['readme']['sections']) && is_array($this->packageInfo['readme']['sections']) ){
+				foreach($this->packageInfo['readme']['sections'] as $sectionName => $sectionContent){
 					$sectionName = str_replace(' ', '_', strtolower($sectionName));
 					$meta['sections'][$sectionName] = $sectionContent;
 				}
@@ -164,7 +169,7 @@ class Wpup_Metadata {
 			$meta['last_updated'] = gmdate('Y-m-d H:i:s', filemtime($zipFilename));
 		}
 
-		$mainFile = $packageInfo['type'] === 'plugin' ? $packageInfo['pluginFile'] : $packageInfo['stylesheet'];
+		$mainFile = $this->packageInfo['type'] === 'plugin' ? $this->packageInfo['pluginFile'] : $this->packageInfo['stylesheet'];
 		$meta['slug'] = basename(dirname(strtolower($mainFile)));
 		//Idea: Warn the user if the package doesn't match the expected "/slug/other-files" layout.
 
