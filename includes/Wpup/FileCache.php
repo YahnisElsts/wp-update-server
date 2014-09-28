@@ -1,6 +1,14 @@
 <?php
 /**
  * A simple file-based cache.
+ *
+ * @internal Data is base64 encoded to avoid unserialization issues ('unserialize(): Error at offset') which
+ * could be caused by:
+ * - inconsistent line endings
+ * - unescaped quotes/slashes etc
+ * - miscounted unicode characters
+ *
+ * @see https://github.com/YahnisElsts/wp-update-server/pull/11
  */
 class Wpup_FileCache implements Wpup_Cache {
 	protected $cacheDirectory;
