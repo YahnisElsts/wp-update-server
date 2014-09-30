@@ -11,15 +11,21 @@ class Wpup_Request {
 	public $slug;
 	/** @var Wpup_Package The package that matches the current slug, if any. */
 	public $package;
+	/** @var string WP Version of the site making the request */
+	public $wpVersion;
+	/** @var string Url of the site making the request */
+	public $wpSiteUrl;
 
 	/** @var array Other, arbitrary request properties. */
 	protected $props = array();
 
-	public function __construct($query, $action, $slug = null, $package = null) {
+	public function __construct($query, $action, $slug = null, $package = null, $wpVersion = null, $wpSiteurl = null) {
 		$this->query = $query;
 		$this->action = $action;
 		$this->slug = $slug;
 		$this->package = $package;
+		$this->wpVersion = $wpVersion;
+		$this->wpSiteUrl = $wpSiteurl;
 	}
 
 	/**

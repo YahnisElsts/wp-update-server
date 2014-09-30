@@ -118,7 +118,7 @@ class Wpup_UpdateServer {
 			$this->exitWithError(sprintf('Package "%s" not found', htmlentities($slug)), 404);
 		}
 
-		return new Wpup_Request($query, $action, $slug, $package);
+		return new Wpup_Request($query, $action, $slug, $package, $this->getWpVersion(), $this->getWpSiteUrl());
 	}
 
 	/**
@@ -247,14 +247,8 @@ class Wpup_UpdateServer {
 		$handle = fopen($logFile, 'a');
 		if ( $handle && flock($handle, LOCK_EX) ) {
 
-			//If the request was made via the WordPress HTTP API we can usually
-			//get WordPress version and site URL from the user agent.
-			$wpVersion = $wpSiteUrl = null;
-			$regex = '@WordPress/(?P<version>\d[^;]*?);\s+(?P<url>https?://.+?)(?:\s|;|$)@i';
-			if ( isset($_SERVER['HTTP_USER_AGENT']) && preg_match($regex, $_SERVER['HTTP_USER_AGENT'], $matches) ) {
-				$wpVersion = $matches['version'];
-				$wpSiteUrl = $matches['url'];
-			}
+			$wpVersion = $this->getWpVersion();
+			$wpSiteUrl = $this->getWpSiteUrl();
 
 			$columns = array(
 				isset($_SERVER['REMOTE_ADDR']) ? str_pad($_SERVER['REMOTE_ADDR'], 15, ' ') : '-',
@@ -281,6 +275,35 @@ class Wpup_UpdateServer {
 			fclose($handle);
 		}
 	}
+	
+	protected function getWpVersion() {
+		$userAgent = $this->parseUserAgent();
+		return ( isset($userAgent['version']) ? $userAgent['version'] : null );
+	}
+
+	protected function getWpSiteUrl() {
+		$userAgent = $this->parseUserAgent();
+		return ( isset($userAgent['siteurl']) ? $userAgent['siteurl'] : null );
+	}
+
+	protected function parseUserAgent() {
+		static $parsed = false;
+
+		if ( $parsed === false ) {
+			//If the request was made via the WordPress HTTP API we can usually
+			//get WordPress version and site URL from the user agent.
+			$regex = '@WordPress/(?P<version>\d[^;]*?);\s+(?P<url>https?://.+?)(?:\s|;|$)@i';
+			if ( isset($_SERVER['HTTP_USER_AGENT']) && preg_match($regex, $_SERVER['HTTP_USER_AGENT'], $matches) ) {
+				$parsed['version'] = $matches['version'];
+				$parsed['siteurl'] = $matches['url'];
+			} else {
+				$parsed = array();
+			}
+		}
+		
+		return $parsed;
+	}
+
 	
 	/**
 	 * Adjust information that will be logged.
