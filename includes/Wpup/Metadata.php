@@ -94,7 +94,7 @@ class Wpup_Metadata {
 	 */
 	public function setMetadataFromArchive() {
 		$modified = filemtime($this->filename);
-		$cacheKey = 'metadata-' . $this->slug . '-' . md5($this->filename . '|' . filesize($this->filename) . '|' . $modified);
+		$cacheKey = 'metadata-b64-' . $this->slug . '-' . md5($this->filename . '|' . filesize($this->filename) . '|' . $modified);
 		$metadata = null;
 
 		//Try the cache first.
