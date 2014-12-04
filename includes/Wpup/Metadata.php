@@ -134,7 +134,27 @@ class Wpup_Metadata {
 		}
 
 		$meta = array();
+		$meta = $this->getInfoFromHeader($meta);
+		$meta = $this->getInfoFromReadme($meta);
 
+		if ( !isset($meta['last_updated']) ) {
+			$meta['last_updated'] = gmdate('Y-m-d H:i:s', filemtime($this->filename));
+		}
+
+		$mainFile = $this->packageInfo['type'] === 'plugin' ? $this->packageInfo['pluginFile'] : $this->packageInfo['stylesheet'];
+		$meta['slug'] = basename(dirname(strtolower($mainFile)));
+		//Idea: Warn the user if the package doesn't match the expected "/slug/other-files" layout.
+
+		return $meta;
+	}
+
+	/**
+	 * Extract relevant metadata from the plugin/theme header information
+	 *
+	 * @param array $meta
+	 * @return array An associative array of metadata fields.
+	 */
+	protected function getInfoFromHeader($meta){
 		if ( isset($this->packageInfo['header']) && !empty($this->packageInfo['header']) ){
 			foreach($this->headerMap as $headerField => $metaField){
 				if ( array_key_exists($headerField, $this->packageInfo['header']) && !empty($this->packageInfo['header'][$headerField]) ){
@@ -149,7 +169,16 @@ class Wpup_Metadata {
 				$meta['details_url'] = $meta['homepage'];
 			}
 		}
-
+		return $meta;
+	}
+	
+	/**
+	 * Extract relevant metadata from the plugin/theme readme
+	 *
+	 * @param array $meta
+	 * @return array An associative array of metadata fields.
+	 */
+	protected function getInfoFromReadme($meta) {
 		if ( !empty($this->packageInfo['readme']) ){
 			foreach($this->readmeMap as $readmeField){
 				if ( !empty($this->packageInfo['readme'][$readmeField]) ){
@@ -171,15 +200,7 @@ class Wpup_Metadata {
 				}
 			}
 		}
-
-		if ( !isset($meta['last_updated']) ) {
-			$meta['last_updated'] = gmdate('Y-m-d H:i:s', filemtime($this->filename));
-		}
-
-		$mainFile = $this->packageInfo['type'] === 'plugin' ? $this->packageInfo['pluginFile'] : $this->packageInfo['stylesheet'];
-		$meta['slug'] = basename(dirname(strtolower($mainFile)));
-		//Idea: Warn the user if the package doesn't match the expected "/slug/other-files" layout.
-
 		return $meta;
 	}
+
 }
