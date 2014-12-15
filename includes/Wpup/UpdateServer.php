@@ -11,19 +11,63 @@ class Wpup_UpdateServer {
 			$serverDirectory = realpath(__DIR__ . '/../..');
 		}
 		if ( $serverUrl === null ) {
-			//Default to the current URL minus the query and "index.php".
-			$serverUrl = 'http://' . $_SERVER['HTTP_HOST'];
-			$path = $_SERVER['SCRIPT_NAME'];
-			if ( basename($path) === 'index.php' ) {
-				$path = dirname($path) . '/';
-			}
-			$serverUrl .= $path;
+			$serverUrl = self::guessServerUrl();
 		}
 
 		$this->serverUrl = $serverUrl;
 		$this->packageDirectory = $serverDirectory . '/packages';
 		$this->logDirectory = $serverDirectory . '/logs';
 		$this->cache = new Wpup_FileCache($serverDirectory . '/cache');
+	}
+
+	/**
+	 * Guess the Server Url based on the current request.
+	 *
+	 * Defaults to the current URL minus the query and "index.php".
+	 *
+	 * @static
+	 *
+	 * @return string Url
+	 */
+	public static function guessServerUrl() {
+		$serverUrl = ( self::isSsl() ? 'https' : 'http' );
+		$serverUrl .= '://' . $_SERVER['HTTP_HOST'];
+		$path = $_SERVER['SCRIPT_NAME'];
+
+		if ( basename($path) === 'index.php' ) {
+			$dir = dirname($path);
+			if ( DIRECTORY_SEPARATOR === '/' ) {
+				$path = $dir . '/';
+			} else {
+				// Fix Windows
+				$path = str_replace('\\', '/', $dir);
+				//Make sure there's a trailing slash.
+				if ( substr($path, -1) !== '/' ) {
+					$path .= '/';
+				}
+			}
+		}
+
+		$serverUrl .= $path;
+		return $serverUrl;
+	}
+
+	/**
+	 * Determine if ssl is used.
+	 *
+	 * @see WP core - wp-includes/functions.php
+	 *
+	 * @return bool True if SSL, false if not used.
+	 */
+	public static function isSsl() {
+		if ( isset($_SERVER['HTTPS']) ) {
+			if ( $_SERVER['HTTPS'] == '1' || strtolower($_SERVER['HTTPS']) === 'on' ) {
+				return true;
+			}
+		} elseif ( isset($_SERVER['SERVER_PORT']) && ( '443' == $_SERVER['SERVER_PORT'] ) ) {
+			return true;
+		}
+		return false;
 	}
 
 	/**
@@ -274,9 +318,13 @@ class Wpup_UpdateServer {
 	 */
 	protected function outputAsJson($response) {
 		header('Content-Type: application/json');
-		$output = json_encode($response);
-		if ( function_exists('wsh_pretty_json') ) {
-			$output = wsh_pretty_json($output);
+		$output = '';
+		if ( defined('JSON_PRETTY_PRINT') ) {
+			$output = json_encode($response, JSON_PRETTY_PRINT);
+		} elseif ( function_exists('wsh_pretty_json') ) {
+			$output = wsh_pretty_json(json_encode($response));
+		} else {
+			$output = json_encode($response);
 		}
 		echo $output;
 	}
@@ -353,10 +401,13 @@ class Wpup_UpdateServer {
 	 * You can also set an argument to NULL to remove it.
 	 *
 	 * @param array $args An associative array of query arguments.
-	 * @param string $url The old URL.
+	 * @param string $url The old URL. Optional, defaults to the request url without query arguments.
 	 * @return string New URL.
 	 */
-	protected static function addQueryArg($args, $url) {
+	protected static function addQueryArg($args, $url = null ) {
+		if ( !isset($url) ) {
+			$url = self::guessServerUrl();
+		}
 		if ( strpos($url, '?') !== false ) {
 			$parts = explode('?', $url, 2);
 			$base = $parts[0] . '?';
