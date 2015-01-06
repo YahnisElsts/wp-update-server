@@ -5,6 +5,7 @@ class Wpup_UpdateServer {
 	protected $cache;
 	protected $serverUrl;
 	protected $startTime = 0;
+	protected $packageFileLoader = array('Wpup_Package', 'fromArchive');
 
 	public function __construct($serverUrl = null, $serverDirectory = null) {
 		if ( $serverDirectory === null ) {
@@ -237,7 +238,7 @@ class Wpup_UpdateServer {
 			return null;
 		}
 
-		return Wpup_Package::fromArchive($filename, $slug, $this->cache);
+		return call_user_func($packageFileLoader, $filename, $slug, $this->cache);
 	}
 
 	/**
