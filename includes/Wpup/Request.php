@@ -5,21 +5,41 @@
 class Wpup_Request {
 	/** @var array Query parameters. */
 	public $query = array();
+	/** @var string Client's IP address. */
+	public $clientIp;
+	/** @var string The HTTP method, e.g. "POST" or "GET". */
+	public $httpMethod;
 	/** @var string The name of the current action. For example, "get_metadata". */
 	public $action;
 	/** @var string Plugin or theme slug from the current request. */
 	public $slug;
 	/** @var Wpup_Package The package that matches the current slug, if any. */
-	public $package;
+	public $package = null;
+
+	/** @var string WordPress version number as extracted from the User-Agent header. */
+	public $wpVersion = null;
+	/** @var string WordPress site URL, also from the User-Agent. */
+	public $wpSiteUrl = null;
 
 	/** @var array Other, arbitrary request properties. */
 	protected $props = array();
 
-	public function __construct($query, $action, $slug = null, $package = null) {
+	public function __construct($query, $headers, $clientIp = '0.0.0.0', $httpMethod = 'GET') {
 		$this->query = $query;
-		$this->action = $action;
-		$this->slug = $slug;
-		$this->package = $package;
+		$this->headers = new Wpup_Headers($headers);
+		$this->clientIp = $clientIp;
+		$this->httpMethod = strtoupper($httpMethod);
+
+		$this->action = $this->param('action', '');
+		$this->slug = $this->param('slug', '');
+
+		//If the request was made via the WordPress HTTP API we can usually
+		//get WordPress version and site URL from the user agent.
+		$regex = '@WordPress/(?P<version>\d[^;]*?);\s+(?P<url>https?://.+?)(?:\s|;|$)@i';
+		if ( preg_match($regex, $this->headers->get('User-Agent', ''), $matches) ) {
+			$this->wpVersion = $matches['version'];
+			$this->wpSiteUrl = $matches['url'];
+		}
 	}
 
 	/**

@@ -1,0 +1,18 @@
+{
+	"name": "yahnis-elsts/wp-update-server",
+	"description": "Custom update API server for WordPress plugins and themes.",
+	"keywords": ["wordpress", "plugin updates", "automatic updates", "theme updates"],
+	"homepage": "https://github.com/YahnisElsts/wp-update-server/",
+	"license": "MIT",
+	"authors": [
+		{
+			"name": "Yahnis Elsts",
+			"email": "whiteshadow@w-shadow.com",
+			"homepage": "http://w-shadow.com/",
+			"role": "Developer"
+		}
+	],
+	"require": {
+		"php": ">=5.3.0"
+	}
+}
