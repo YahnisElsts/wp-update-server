@@ -67,7 +67,7 @@ class Wpup_Package {
 		$metaObj = new Wpup_Metadata($slug, $filename, $cache);
 		$metadata = $metaObj->get();
 
-		if ( $slug === null ) {
+		if ( $slug === null && isset($metadata['slug']) ) {
 			$slug = $metadata['slug'];
 		}
 
