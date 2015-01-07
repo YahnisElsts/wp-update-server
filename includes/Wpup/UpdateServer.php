@@ -238,7 +238,7 @@ class Wpup_UpdateServer {
 			return null;
 		}
 
-		return call_user_func($packageFileLoader, $filename, $slug, $this->cache);
+		return call_user_func($this->packageFileLoader, $filename, $slug, $this->cache);
 	}
 
 	/**
