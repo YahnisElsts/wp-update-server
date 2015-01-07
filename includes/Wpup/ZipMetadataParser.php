@@ -32,7 +32,7 @@ class Wpup_ZipMetadataParser {
 		'requires',
 		'tested',
 	);
-	
+
 	/**
 	 * @var array Package info as retrieved by the parser
 	 */
@@ -42,7 +42,7 @@ class Wpup_ZipMetadataParser {
 	 * @var string Path to the Zip archive that contains the plugin or theme.
 	 */
 	protected $filename;
-	
+
 	/**
 	 * @var string Plugin or theme slug.
 	 */
@@ -232,7 +232,7 @@ class Wpup_ZipMetadataParser {
 			}
 		}
 	}
-	
+
 	/**
 	 * Add last update date to the metadata
 	 */
