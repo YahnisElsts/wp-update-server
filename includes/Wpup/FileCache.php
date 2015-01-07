@@ -28,6 +28,9 @@ class Wpup_FileCache implements Wpup_Cache {
 		if ( is_file($filename) && is_readable($filename) ) {
 			$cache = unserialize(base64_decode(file_get_contents($filename)));
 			if ( $cache['expiration_time'] < time() ) {
+				/* Could cause potential non-critical race condition
+				   @see https://github.com/YahnisElsts/wp-update-server/pull/22 */
+				$this->clear($key);
 				return null; //Cache expired.
 			} else {
 				return $cache['value'];
