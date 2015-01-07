@@ -28,6 +28,7 @@ class Wpup_FileCache implements Wpup_Cache {
 		if ( is_file($filename) && is_readable($filename) ) {
 			$cache = unserialize(base64_decode(file_get_contents($filename)));
 			if ( $cache['expiration_time'] < time() ) {
+				$this->clear($key);
 				return null; //Cache expired.
 			} else {
 				return $cache['value'];
