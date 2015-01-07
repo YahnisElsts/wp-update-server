@@ -93,8 +93,7 @@ class Wpup_Metadata {
 	 * @throws Wpup_InvalidPackageException if the input file can't be parsed as a plugin or theme.
 	 */
 	public function setMetadataFromArchive() {
-		$modified = filemtime($this->filename);
-		$cacheKey = 'metadata-b64-' . $this->slug . '-' . md5($this->filename . '|' . filesize($this->filename) . '|' . $modified);
+		$cacheKey = $this->generateCacheKey();
 		$metadata = null;
 
 		//Try the cache first.
@@ -201,6 +200,15 @@ class Wpup_Metadata {
 			}
 		}
 		return $meta;
+	}
+	
+	/**
+	 * Generate the cache key (cache filename) for a file
+	 */
+	protected function generateCacheKey() {
+		$modified = filemtime($this->filename);
+		$filesize = filesize($this->filename);
+		return 'metadata-b64-' . $this->slug . '-' . md5($this->filename . '|' . $filesize . '|' . $modified);
 	}
 
 }
