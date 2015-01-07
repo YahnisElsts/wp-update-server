@@ -89,12 +89,13 @@ class Wpup_Package {
 				throw new Wpup_InvalidPackageException( sprintf('The specified file %s does not contain a valid WordPress plugin or theme.', $filename));
 			}
 			$metadata['last_updated'] = gmdate('Y-m-d H:i:s', $modified);
+			
+			//Update cache.
+			if ( isset($cache) ) {
+				$cache->set($cacheKey, $metadata, self::$cacheTime);
+			}
 		}
 
-		//Update cache.
-		if ( isset($cache) ) {
-			$cache->set($cacheKey, $metadata, self::$cacheTime);
-		}
 		if ( $slug === null ) {
 			$slug = $metadata['slug'];
 		}
