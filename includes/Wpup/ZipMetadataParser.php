@@ -99,7 +99,7 @@ class Wpup_ZipMetadataParser {
 
 		// Otherwise read out the metadata and create a cache
 		if ( !isset($this->metadata) || !is_array($this->metadata) ){
-			$this->createMetadataArchive();
+			$this->createMetadataCache($cacheKey);
 		}
 	}
 
@@ -108,7 +108,7 @@ class Wpup_ZipMetadataParser {
 	 *
 	 * @throws Wpup_InvalidPackageException if the input file can't be parsed as a plugin or theme.
 	 */
-	protected function createMetadataCache(){
+	protected function createMetadataCache($cacheKey){
 		$this->extractMetadata();
 
 		if ( $this->metadata === null ){
