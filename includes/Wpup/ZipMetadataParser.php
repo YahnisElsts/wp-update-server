@@ -71,7 +71,7 @@ class Wpup_ZipMetadataParser {
 		$this->filename = $filename;
 		$this->cache = $cache;
 
-		$this->setMetadataFromCache();
+		$this->setMetadata();
 	}
 
 	/**
@@ -89,7 +89,7 @@ class Wpup_ZipMetadataParser {
 	 * We'll try to load processed metadata from the cache first (if available), and if that
 	 * fails we'll extract plugin/theme details from the specified Zip file.
 	 */
-	protected function setMetadataFromCache(){
+	protected function setMetadata(){
 		$cacheKey = $this->generateCacheKey();
 
 		//Try the cache first.
@@ -99,25 +99,12 @@ class Wpup_ZipMetadataParser {
 
 		// Otherwise read out the metadata and create a cache
 		if ( !isset($this->metadata) || !is_array($this->metadata) ){
-			$this->createMetadataCache($cacheKey);
-		}
-	}
+			$this->extractMetadata();
 
-	/**
-	 * Read the metadata from a zip file and cache it
-	 *
-	 * @throws Wpup_InvalidPackageException if the input file can't be parsed as a plugin or theme.
-	 */
-	protected function createMetadataCache($cacheKey){
-		$this->extractMetadata();
-
-		if ( $this->metadata === null ){
-			throw new Wpup_InvalidPackageException( sprintf('The specified file %s does not contain a valid WordPress plugin or theme.', $this->filename));
-		}
-
-		//Update cache.
-		if ( isset($this->cache) ){
-			$this->cache->set($cacheKey, $this->metadata, self::$cacheTime);
+			//Update cache.
+			if ( isset($this->cache) ){
+				$this->cache->set($cacheKey, $this->metadata, self::$cacheTime);
+			}
 		}
 	}
 
@@ -128,18 +115,17 @@ class Wpup_ZipMetadataParser {
 	 * See this page for an overview of the plugin metadata format:
 	 * @link https://spreadsheets.google.com/pub?key=0AqP80E74YcUWdEdETXZLcXhjd2w0cHMwX2U1eDlWTHc&authkey=CK7h9toK&hl=en&single=true&gid=0&output=html
 	 *
-	 * @return array An associative array of metadata fields, or NULL if the input file doesn't appear to be a valid plugin/theme archive.
+	 * @throws Wpup_InvalidPackageException if the input file can't be parsed as a plugin or theme.
 	 */
 	protected function extractMetadata(){
 		$this->packageInfo = WshWordPressPackageParser::parsePackage($this->filename, true);
-		if ( $this->packageInfo === false ){
-			$this->metadata = null;
-		}
-		else {
+		if ( is_array($this->packageInfo) && $this->packageInfo !== array() ){
 			$this->setInfoFromHeader();
 			$this->setInfoFromReadme();
 			$this->setLastUpdateDate();
 			$this->setSlug();
+		} else {
+			throw new Wpup_InvalidPackageException( sprintf('The specified file %s does not contain a valid WordPress plugin or theme.', $this->filename));
 		}
 	}
 
@@ -148,7 +134,7 @@ class Wpup_ZipMetadataParser {
 	 */
 	protected function setInfoFromHeader(){
 		if ( isset($this->packageInfo['header']) && !empty($this->packageInfo['header']) ){
-			$this->setHeaderFields();
+			$this->setMappedFields($this->packageInfo['header'], $this->headerMap);
 			$this->setThemeDetailsUrl();
 		}
 	}
@@ -158,21 +144,27 @@ class Wpup_ZipMetadataParser {
 	 */
 	protected function setInfoFromReadme(){
 		if ( !empty($this->packageInfo['readme']) ){
-			$this->setReadmeFields();
+			$readmeMap = array_combine(array_values($this->readmeMap), $this->readmeMap);
+			$this->setMappedFields($this->packageInfo['readme'], $readmeMap);
 			$this->setReadmeSections();
 			$this->setReadmeUpgradeNotice();
 		}
 	}
 
 	/**
-	 * Extract selected metadata from the 'Field: ....' tags at the top of the main plugin file
+	 * Extract selected metadata from the retrieved package info
 	 *
 	 * @see http://codex.wordpress.org/File_Header
+	 * @see https://wordpress.org/plugins/about/readme.txt
+	 *
+	 * @param array $input The package info sub-array to use to retrieve the info from
+	 * @param array $map   The key mapping for that sub-array where the key is the key as used in the
+	 *                     input array and the value is the key to use for the output array
 	 */
-	protected function setHeaderFields(){
-		foreach($this->headerMap as $headerField => $metaField){
-			if ( array_key_exists($headerField, $this->packageInfo['header']) && !empty($this->packageInfo['header'][$headerField]) ){
-				$this->metadata[$metaField] = $this->packageInfo['header'][$headerField];
+	protected function setMappedFields( $input, $map ){
+		foreach($map as $fieldKey => $metaKey){
+			if ( !empty($input[$fieldKey]) ){
+				$this->metadata[$metaKey] = $input[$fieldKey];
 			}
 		}
 	}
@@ -190,27 +182,13 @@ class Wpup_ZipMetadataParser {
 		}
 	}
 
-
-	/**
-	 * Extract selected metadata from the 'Field: ....' tags at the top of a readme file
-	 *
-	 * @see https://wordpress.org/plugins/about/readme.txt
-	 */
-	protected function setReadmeFields(){
-		foreach($this->readmeMap as $readmeField){
-			if ( !empty($this->packageInfo['readme'][$readmeField]) ){
-				$this->metadata[$readmeField] = $this->packageInfo['readme'][$readmeField];
-			}
-		}
-	}
-
 	/**
 	 * Extract the texual information sections from a readme file
 	 *
 	 * @see https://wordpress.org/plugins/about/readme.txt
 	 */
 	protected function setReadmeSections(){
-		if ( !empty($this->packageInfo['readme']['sections']) && is_array($this->packageInfo['readme']['sections']) ){
+		if ( is_array($this->packageInfo['readme']['sections']) && $this->packageInfo['readme']['sections'] !== array()){
 			foreach($this->packageInfo['readme']['sections'] as $sectionName => $sectionContent){
 				$sectionName = str_replace(' ', '_', strtolower($sectionName));
 				$this->metadata['sections'][$sectionName] = $sectionContent;
@@ -226,7 +204,7 @@ class Wpup_ZipMetadataParser {
 	protected function setReadmeUpgradeNotice(){
 		//Check if we have an upgrade notice for this version
 		if ( isset($this->metadata['sections']['upgrade_notice']) && isset($this->metadata['version']) ){
-			$regex = "@<h4>\s*" . preg_quote($this->metadata['version']) . "\s*</h4>[^<>]*?<p>(.+?)</p>@i";
+			$regex = '@<h4>\s*' . preg_quote($this->metadata['version']) . '\s*</h4>[^<>]*?<p>(.+?)</p>@i';
 			if ( preg_match($regex, $this->metadata['sections']['upgrade_notice'], $matches) ){
 				$this->metadata['upgrade_notice'] = trim(strip_tags($matches[1]));
 			}
