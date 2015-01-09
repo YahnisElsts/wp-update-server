@@ -161,7 +161,7 @@ class Wpup_ZipMetadataParser {
 	 * @param array $map   The key mapping for that sub-array where the key is the key as used in the
 	 *                     input array and the value is the key to use for the output array
 	 */
-	protected function setMappedFields( $input, $map ){
+	protected function setMappedFields($input, $map){
 		foreach($map as $fieldKey => $metaKey){
 			if ( !empty($input[$fieldKey]) ){
 				$this->metadata[$metaKey] = $input[$fieldKey];
