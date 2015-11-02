@@ -318,7 +318,7 @@ class Wpup_UpdateServer {
 	 * @param mixed $response
 	 */
 	protected function outputAsJson($response) {
-		header('Content-Type: application/json');
+		header('Content-Type: application/json; charset=utf-8');
 		$output = '';
 		if ( defined('JSON_PRETTY_PRINT') ) {
 			$output = json_encode($response, JSON_PRETTY_PRINT);

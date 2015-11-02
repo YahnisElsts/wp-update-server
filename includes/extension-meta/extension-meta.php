@@ -205,10 +205,6 @@ class WshWordPressPackageParser {
 			$sections = array_map(__CLASS__ . '::applyMarkdown', $sections);
 		}
 
-		//This is only necessary if you intend to later json_encode() the sections.
-		//json_encode() may encode certain strings as NULL if they're not in UTF-8.
-		$sections = array_map('utf8_encode', $sections);
-
 		$readme['sections'] = $sections;
 
 		return $readme;
