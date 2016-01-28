@@ -12,8 +12,8 @@
 #
 
 
-define( 'MARKDOWN_VERSION',  "1.0.1p" ); # Sun 13 Jan 2013
-define( 'MARKDOWNEXTRA_VERSION',  "1.2.6" ); # Sun 13 Jan 2013
+define( 'MARKDOWN_VERSION',  "1.0.2" ); # 29 Nov 2013
+define( 'MARKDOWNEXTRA_VERSION',  "1.2.8" ); # 29 Nov 2013
 
 
 #
@@ -79,7 +79,7 @@ Plugin Name: Markdown Extra
 Plugin Name: Markdown
 Plugin URI: http://michelf.ca/projects/php-markdown/
 Description: <a href="http://daringfireball.net/projects/markdown/syntax">Markdown syntax</a> allows you to write using an easy-to-read, easy-to-write plain text format. Based on the original Perl version by <a href="http://daringfireball.net/">John Gruber</a>. <a href="http://michelf.ca/projects/php-markdown/">More...</a>
-Version: 1.2.6
+Version: 1.2.8
 Author: Michel Fortin
 Author URI: http://michelf.ca/
 */
@@ -295,7 +295,7 @@ class Markdown_Parser {
 		$this->titles = $this->predef_titles;
 		$this->html_hashes = array();
 		
-		$in_anchor = false;
+		$this->in_anchor = false;
 	}
 	
 	function teardown() {
@@ -1479,8 +1479,15 @@ class Markdown_Parser {
 			>
 			}xi',
 			array(&$this, '_doAutoLinks_email_callback'), $text);
+		$text = preg_replace_callback('{<(tel:([^\'">\s]+))>}i',array(&$this, '_doAutoLinks_tel_callback'), $text);
 
 		return $text;
+	}
+	function _doAutoLinks_tel_callback($matches) {
+		$url = $this->encodeAttribute($matches[1]);
+		$tel = $this->encodeAttribute($matches[2]);
+		$link = "<a href=\"$url\">$tel</a>";
+		return $this->hashPart($link);
 	}
 	function _doAutoLinks_url_callback($matches) {
 		$url = $this->encodeAttribute($matches[1]);
@@ -1816,7 +1823,7 @@ class MarkdownExtra_Parser extends Markdown_Parser {
 		if (empty($attr)) return "";
 		
 		# Split on components
-		preg_match_all("/[.#][-_:a-zA-Z0-9]+/", $attr, $matches);
+		preg_match_all('/[#.][-_:a-zA-Z0-9]+/', $attr, $matches);
 		$elements = $matches[0];
 
 		# handle classes and ids (only first id taken into account)
@@ -1839,6 +1846,51 @@ class MarkdownExtra_Parser extends Markdown_Parser {
 			$attr_str .= ' class="'.implode(" ", $classes).'"';
 		}
 		return $attr_str;
+	}
+
+
+	function stripLinkDefinitions($text) {
+	#
+	# Strips link definitions from text, stores the URLs and titles in
+	# hash references.
+	#
+		$less_than_tab = $this->tab_width - 1;
+
+		# Link defs are in the form: ^[id]: url "optional title"
+		$text = preg_replace_callback('{
+							^[ ]{0,'.$less_than_tab.'}\[(.+)\][ ]?:	# id = $1
+							  [ ]*
+							  \n?				# maybe *one* newline
+							  [ ]*
+							(?:
+							  <(.+?)>			# url = $2
+							|
+							  (\S+?)			# url = $3
+							)
+							  [ ]*
+							  \n?				# maybe one newline
+							  [ ]*
+							(?:
+								(?<=\s)			# lookbehind for whitespace
+								["(]
+								(.*?)			# title = $4
+								[")]
+								[ ]*
+							)?	# title is optional
+					(?:[ ]* '.$this->id_class_attr_catch_re.' )?  # $5 = extra id & class attr
+							(?:\n+|\Z)
+			}xm',
+			array(&$this, '_stripLinkDefinitions_callback'),
+			$text);
+		return $text;
+	}
+	function _stripLinkDefinitions_callback($matches) {
+		$link_id = strtolower($matches[1]);
+		$url = $matches[2] == '' ? $matches[3] : $matches[2];
+		$this->urls[$link_id] = $url;
+		$this->titles[$link_id] =& $matches[4];
+		$this->ref_attr[$link_id] = $this->doExtraAttributes("", $dummy =& $matches[5]);
+		return ''; # String that will replace the block
 	}
 
 
@@ -1951,9 +2003,6 @@ class MarkdownExtra_Parser extends Markdown_Parser {
 					<\?.*?\?> | <%.*?%>	# Processing instruction
 				|
 					<!\[CDATA\[.*?\]\]>	# CData Block
-				|
-					# Code span marker
-					`+
 				'. ( !$span ? ' # If not in span.
 				|
 					# Indented code block
@@ -1965,16 +2014,22 @@ class MarkdownExtra_Parser extends Markdown_Parser {
 				|
 					# Fenced code block marker
 					(?<= ^ | \n )
-					[ ]{0,'.($indent+3).'}~{3,}
+					[ ]{0,'.($indent+3).'}(?:~{3,}|`{3,})
 									[ ]*
 					(?:
-						[.]?[-_:a-zA-Z0-9]+ # standalone class name
+					\.?[-_:a-zA-Z0-9]+ # standalone class name
 					|
 						'.$this->id_class_attr_nocatch_re.' # extra attributes
 					)?
 					[ ]*
-					\n
+					(?= \n )
 				' : '' ). ' # End (if not is span).
+				|
+					# Code span marker
+					# Note, this regex needs to go after backtick fenced
+					# code blocks but it should also be kept outside of the
+					# "if not in span" condition adding backticks to the parser
+					`+
 				)
 			}xs';
 
@@ -2017,27 +2072,11 @@ class MarkdownExtra_Parser extends Markdown_Parser {
 			$tag_re = preg_quote($tag); # For use in a regular expression.
 			
 			#
-			# Check for: Code span marker
-			#
-			if ($tag{0} == "`") {
-				# Find corresponding end marker.
-				$tag_re = preg_quote($tag);
-				if (preg_match('{^(?>.+?|\n(?!\n))*?(?<!`)'.$tag_re.'(?!`)}',
-					$text, $matches))
-				{
-					# End marker found: pass text unchanged until marker.
-					$parsed .= $tag . $matches[0];
-					$text = substr($text, strlen($matches[0]));
-				}
-				else {
-					# Unmatched marker: just skip it.
-					$parsed .= $tag;
-				}
-			}
-			#
 			# Check for: Fenced code block marker.
+			# Note: need to recheck the whole tag to disambiguate backtick
+			# fences from code spans
 			#
-			else if (preg_match('{^\n?([ ]{0,'.($indent+3).'})(~+)}', $tag, $capture)) {
+			if (preg_match('{^\n?([ ]{0,'.($indent+3).'})(~{3,}|`{3,})[ ]*(?:\.?[-_:a-zA-Z0-9]+|'.$this->id_class_attr_nocatch_re.')?[ ]*\n?$}', $tag, $capture)) {
 				# Fenced code block marker: find matching end marker.
 				$fence_indent = strlen($capture[1]); # use captured indent in re
 				$fence_re = $capture[2]; # use captured fence in re
@@ -2060,6 +2099,25 @@ class MarkdownExtra_Parser extends Markdown_Parser {
 				# Indented code block: pass it unchanged, will be handled 
 				# later.
 				$parsed .= $tag;
+			}
+			#
+			# Check for: Code span marker
+			# Note: need to check this after backtick fenced code blocks
+			#
+			else if ($tag{0} == "`") {
+				# Find corresponding end marker.
+				$tag_re = preg_quote($tag);
+				if (preg_match('{^(?>.+?|\n(?!\n))*?(?<!`)'.$tag_re.'(?!`)}',
+					$text, $matches))
+				{
+					# End marker found: pass text unchanged until marker.
+					$parsed .= $tag . $matches[0];
+					$text = substr($text, strlen($matches[0]));
+				}
+				else {
+					# Unmatched marker: just skip it.
+					$parsed .= $tag;
+				}
 			}
 			#
 			# Check for: Opening Block level tag or
@@ -2309,6 +2367,244 @@ class MarkdownExtra_Parser extends Markdown_Parser {
 	}
 
 
+	function doAnchors($text) {
+	#
+	# Turn Markdown link shortcuts into XHTML <a> tags.
+	#
+		if ($this->in_anchor) return $text;
+		$this->in_anchor = true;
+		
+		#
+		# First, handle reference-style links: [link text] [id]
+		#
+		$text = preg_replace_callback('{
+			(					# wrap whole match in $1
+			  \[
+				('.$this->nested_brackets_re.')	# link text = $2
+			  \]
+
+			  [ ]?				# one optional space
+			  (?:\n[ ]*)?		# one optional newline followed by spaces
+
+			  \[
+				(.*?)		# id = $3
+			  \]
+			)
+			}xs',
+			array(&$this, '_doAnchors_reference_callback'), $text);
+
+		#
+		# Next, inline-style links: [link text](url "optional title")
+		#
+		$text = preg_replace_callback('{
+			(				# wrap whole match in $1
+			  \[
+				('.$this->nested_brackets_re.')	# link text = $2
+			  \]
+			  \(			# literal paren
+				[ \n]*
+				(?:
+					<(.+?)>	# href = $3
+				|
+					('.$this->nested_url_parenthesis_re.')	# href = $4
+				)
+				[ \n]*
+				(			# $5
+				  ([\'"])	# quote char = $6
+				  (.*?)		# Title = $7
+				  \6		# matching quote
+				  [ \n]*	# ignore any spaces/tabs between closing quote and )
+				)?			# title is optional
+			  \)
+			  (?:[ ]? '.$this->id_class_attr_catch_re.' )?	 # $8 = id/class attributes
+			)
+			}xs',
+			array(&$this, '_doAnchors_inline_callback'), $text);
+
+		#
+		# Last, handle reference-style shortcuts: [link text]
+		# These must come last in case you've also got [link text][1]
+		# or [link text](/foo)
+		#
+		$text = preg_replace_callback('{
+			(					# wrap whole match in $1
+			  \[
+				([^\[\]]+)		# link text = $2; can\'t contain [ or ]
+			  \]
+			)
+			}xs',
+			array(&$this, '_doAnchors_reference_callback'), $text);
+
+		$this->in_anchor = false;
+		return $text;
+	}
+	function _doAnchors_reference_callback($matches) {
+		$whole_match =  $matches[1];
+		$link_text   =  $matches[2];
+		$link_id     =& $matches[3];
+
+		if ($link_id == "") {
+			# for shortcut links like [this][] or [this].
+			$link_id = $link_text;
+		}
+		
+		# lower-case and turn embedded newlines into spaces
+		$link_id = strtolower($link_id);
+		$link_id = preg_replace('{[ ]?\n}', ' ', $link_id);
+
+		if (isset($this->urls[$link_id])) {
+			$url = $this->urls[$link_id];
+			$url = $this->encodeAttribute($url);
+			
+			$result = "<a href=\"$url\"";
+			if ( isset( $this->titles[$link_id] ) ) {
+				$title = $this->titles[$link_id];
+				$title = $this->encodeAttribute($title);
+				$result .=  " title=\"$title\"";
+			}
+			if (isset($this->ref_attr[$link_id]))
+				$result .= $this->ref_attr[$link_id];
+		
+			$link_text = $this->runSpanGamut($link_text);
+			$result .= ">$link_text</a>";
+			$result = $this->hashPart($result);
+		}
+		else {
+			$result = $whole_match;
+		}
+		return $result;
+	}
+	function _doAnchors_inline_callback($matches) {
+		$whole_match	=  $matches[1];
+		$link_text		=  $this->runSpanGamut($matches[2]);
+		$url			=  $matches[3] == '' ? $matches[4] : $matches[3];
+		$title			=& $matches[7];
+		$attr  = $this->doExtraAttributes("a", $dummy =& $matches[8]);
+
+
+		$url = $this->encodeAttribute($url);
+
+		$result = "<a href=\"$url\"";
+		if (isset($title)) {
+			$title = $this->encodeAttribute($title);
+			$result .=  " title=\"$title\"";
+		}
+		$result .= $attr;
+		
+		$link_text = $this->runSpanGamut($link_text);
+		$result .= ">$link_text</a>";
+
+		return $this->hashPart($result);
+	}
+
+
+	function doImages($text) {
+	#
+	# Turn Markdown image shortcuts into <img> tags.
+	#
+		#
+		# First, handle reference-style labeled images: ![alt text][id]
+		#
+		$text = preg_replace_callback('{
+			(				# wrap whole match in $1
+			  !\[
+				('.$this->nested_brackets_re.')		# alt text = $2
+			  \]
+
+			  [ ]?				# one optional space
+			  (?:\n[ ]*)?		# one optional newline followed by spaces
+
+			  \[
+				(.*?)		# id = $3
+			  \]
+
+			)
+			}xs', 
+			array(&$this, '_doImages_reference_callback'), $text);
+
+		#
+		# Next, handle inline images:  ![alt text](url "optional title")
+		# Don't forget: encode * and _
+		#
+		$text = preg_replace_callback('{
+			(				# wrap whole match in $1
+			  !\[
+				('.$this->nested_brackets_re.')		# alt text = $2
+			  \]
+			  \s?			# One optional whitespace character
+			  \(			# literal paren
+				[ \n]*
+				(?:
+					<(\S*)>	# src url = $3
+				|
+					('.$this->nested_url_parenthesis_re.')	# src url = $4
+				)
+				[ \n]*
+				(			# $5
+				  ([\'"])	# quote char = $6
+				  (.*?)		# title = $7
+				  \6		# matching quote
+				  [ \n]*
+				)?			# title is optional
+			  \)
+			  (?:[ ]? '.$this->id_class_attr_catch_re.' )?	 # $8 = id/class attributes
+			)
+			}xs',
+			array(&$this, '_doImages_inline_callback'), $text);
+
+		return $text;
+	}
+	function _doImages_reference_callback($matches) {
+		$whole_match = $matches[1];
+		$alt_text    = $matches[2];
+		$link_id     = strtolower($matches[3]);
+
+		if ($link_id == "") {
+			$link_id = strtolower($alt_text); # for shortcut links like ![this][].
+		}
+
+		$alt_text = $this->encodeAttribute($alt_text);
+		if (isset($this->urls[$link_id])) {
+			$url = $this->encodeAttribute($this->urls[$link_id]);
+			$result = "<img src=\"$url\" alt=\"$alt_text\"";
+			if (isset($this->titles[$link_id])) {
+				$title = $this->titles[$link_id];
+				$title = $this->encodeAttribute($title);
+				$result .=  " title=\"$title\"";
+			}
+			if (isset($this->ref_attr[$link_id]))
+				$result .= $this->ref_attr[$link_id];
+			$result .= $this->empty_element_suffix;
+			$result = $this->hashPart($result);
+		}
+		else {
+			# If there's no such link ID, leave intact:
+			$result = $whole_match;
+		}
+
+		return $result;
+	}
+	function _doImages_inline_callback($matches) {
+		$whole_match	= $matches[1];
+		$alt_text		= $matches[2];
+		$url			= $matches[3] == '' ? $matches[4] : $matches[3];
+		$title			=& $matches[7];
+		$attr  = $this->doExtraAttributes("img", $dummy =& $matches[8]);
+
+		$alt_text = $this->encodeAttribute($alt_text);
+		$url = $this->encodeAttribute($url);
+		$result = "<img src=\"$url\" alt=\"$alt_text\"";
+		if (isset($title)) {
+			$title = $this->encodeAttribute($title);
+			$result .=  " title=\"$title\""; # $title already quoted
+		}
+		$result .= $attr;
+		$result .= $this->empty_element_suffix;
+
+		return $this->hashPart($result);
+	}
+
+
 	function doHeaders($text) {
 	#
 	# Redefined to add id and class attribute support.
@@ -2460,6 +2756,7 @@ class MarkdownExtra_Parser extends Markdown_Parser {
 		$head		= $this->parseSpan($head);
 		$headers	= preg_split('/ *[|] */', $head);
 		$col_count	= count($headers);
+		$attr       = array_pad($attr, $col_count, '');
 		
 		# Write column headers.
 		$text = "<table>\n";
@@ -2564,7 +2861,7 @@ class MarkdownExtra_Parser extends Markdown_Parser {
 			(?>\A\n?|\n\n+)					# leading line
 			(								# definition terms = $1
 				[ ]{0,'.$less_than_tab.'}	# leading whitespace
-				(?![:][ ]|[ ])				# negative lookahead for a definition 
+				(?!\:[ ]|[ ])				# negative lookahead for a definition
 											#   mark (colon) or more whitespace.
 				(?> \S.* \n)+?				# actual term (not whitespace).	
 			)			
@@ -2578,12 +2875,12 @@ class MarkdownExtra_Parser extends Markdown_Parser {
 			\n(\n+)?						# leading line = $1
 			(								# marker space = $2
 				[ ]{0,'.$less_than_tab.'}	# whitespace before colon
-				[:][ ]+						# definition mark (colon)
+				\:[ ]+						# definition mark (colon)
 			)
 			((?s:.+?))						# definition text = $3
 			(?= \n+ 						# stop at next definition mark,
 				(?:							# next term or end of text
-					[ ]{0,'.$less_than_tab.'} [:][ ]	|
+					[ ]{0,'.$less_than_tab.'} \:[ ]	|
 					<dt> | \z
 				)						
 			)					
@@ -2635,11 +2932,11 @@ class MarkdownExtra_Parser extends Markdown_Parser {
 				(?:\n|\A)
 				# 1: Opening marker
 				(
-					~{3,} # Marker: three tilde or more.
+					(?:~{3,}|`{3,}) # 3 or more tildes/backticks.
 				)
 				[ ]*
 				(?:
-					[.]?([-_:a-zA-Z0-9]+) # 2: standalone class name
+					\.?([-_:a-zA-Z0-9]+) # 2: standalone class name
 				|
 					'.$this->id_class_attr_catch_re.' # 3: Extra attributes
 				)?
@@ -2654,7 +2951,7 @@ class MarkdownExtra_Parser extends Markdown_Parser {
 				)
 				
 				# Closing marker.
-				\1 [ ]* \n
+				\1 [ ]* (?= \n )
 			}xm',
 			array(&$this, '_doFencedCodeBlocks_callback'), $text);
 
@@ -3047,3 +3344,4 @@ negligence or otherwise) arising in any way out of the use of this
 software, even if advised of the possibility of such damage.
 
 */
+?>
