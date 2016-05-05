@@ -319,7 +319,6 @@ class Wpup_UpdateServer {
 	 */
 	protected function outputAsJson($response) {
 		header('Content-Type: application/json; charset=utf-8');
-		$output = '';
 		if ( defined('JSON_PRETTY_PRINT') ) {
 			$output = json_encode($response, JSON_PRETTY_PRINT);
 		} elseif ( function_exists('wsh_pretty_json') ) {
