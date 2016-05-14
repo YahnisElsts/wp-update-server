@@ -60,9 +60,9 @@ Now that you have the server ready to go, the next step is to make your plugin q
    ```php
 require 'path/to/plugin-update-checker/plugin-update-checker.php';
 $MyUpdateChecker = PucFactory::buildUpdateChecker(
-	'http://example.com/wp-update-server/?action=get_metadata&slug=plugin-directory-name', //Metadata URL.
-	__FILE__, //Full path to the main plugin file.
-	'plugin-directory-name' //Plugin slug. Usually it's the same as the name of the directory.
+    'http://example.com/wp-update-server/?action=get_metadata&slug=plugin-directory-name', //Metadata URL.
+    __FILE__, //Full path to the main plugin file.
+    'plugin-directory-name' //Plugin slug. Usually it's the same as the name of the directory.
 );
 ```
 4. When you're ready to release an update, just zip the plugin directory as described above and put it in the `packages` subdirectory on the server (overwriting the previous version). 
