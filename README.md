@@ -162,13 +162,16 @@ Author: Yahnis Elsts
 Author URI: http://w-shadow.com/
 */
 
+require_once __DIR__ . '/path/to/wp-update-server/loader.php';
+
 class ExamplePlugin {
 	protected $updateServer;
 
 	public function __construct() {
-		require_once __DIR__ . '/path/to/wp-update-server/loader.php';
-		$this->updateServer = new Wpup_UpdateServer(home_url('/'));
+		$this->updateServer = new MyCustomServer(home_url('/'));
 		
+		//The "action" and "slug" query parameters are often used by the WordPress core
+		//or other plugins, so lets use different parameter names to avoid conflict.
 		add_filter('query_vars', array($this, 'addQueryVariables'));
 		add_action('template_redirect', array($this, 'handleUpdateApiRequest'));
 	}
@@ -191,10 +194,20 @@ class ExamplePlugin {
 	}
 }
 
+class MyCustomServer extends Wpup_UpdateServer {
+    protected function generateDownloadUrl(Wpup_Package $package) {
+        $query = array(
+            'update_action' => 'download',
+            'update_slug' => $package->slug,
+        );
+        return self::addQueryArg($query, $this->serverUrl);
+    }
+}
+
 $examplePlugin = new ExamplePlugin();
 ```
 
-**Note:** If you intend to use something like the above in practice, you'll probably want to override `Wpup_UpdateServer::generateDownloadUrl()` to use your own URL structure or query variable names.
+**Note:** If you intend to use something like the above in practice, you'll probably want to override `Wpup_UpdateServer::generateDownloadUrl()` to customize the URLs or change the query parameters.
 
 ### Securing download links
 
