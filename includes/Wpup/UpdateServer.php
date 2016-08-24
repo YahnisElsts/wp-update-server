@@ -36,16 +36,14 @@ class Wpup_UpdateServer {
 		$path = $_SERVER['SCRIPT_NAME'];
 
 		if ( basename($path) === 'index.php' ) {
-			$dir = dirname($path);
+			$path = dirname($path);
 			if ( DIRECTORY_SEPARATOR === '/' ) {
-				$path = $dir . '/';
-			} else {
-				// Fix Windows
-				$path = str_replace('\\', '/', $dir);
-				//Make sure there's a trailing slash.
-				if ( substr($path, -1) !== '/' ) {
-					$path .= '/';
-				}
+				//Normalize Windows paths.
+				$path = str_replace('\\', '/', $path);
+			}
+			//Make sure there's a trailing slash.
+			if ( substr($path, -1) !== '/' ) {
+				$path .= '/';
 			}
 		}
 
