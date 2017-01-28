@@ -2,6 +2,8 @@
 class Wpup_UpdateServer {
 	protected $packageDirectory;
 	protected $logDirectory;
+	protected $bannerDirectory;
+
 	protected $cache;
 	protected $serverUrl;
 	protected $startTime = 0;
@@ -18,6 +20,7 @@ class Wpup_UpdateServer {
 		$this->serverUrl = $serverUrl;
 		$this->packageDirectory = $serverDirectory . '/packages';
 		$this->logDirectory = $serverDirectory . '/logs';
+		$this->bannerDirectory = $serverDirectory . '/banners';
 		$this->cache = new Wpup_FileCache($serverDirectory . '/cache');
 	}
 
@@ -170,6 +173,7 @@ class Wpup_UpdateServer {
 	protected function actionGetMetadata(Wpup_Request $request) {
 		$meta = $request->package->getMetadata();
 		$meta['download_url'] = $this->generateDownloadUrl($request->package);
+		$meta['banners'] = $this->getBanners($request->package);
 
 		$meta = $this->filterMetadata($meta, $request);
 
@@ -261,6 +265,48 @@ class Wpup_UpdateServer {
 			'slug' => $package->slug,
 		);
 		return self::addQueryArg($query, $this->serverUrl);
+	}
+
+	/**
+	 * Find plugin banners.
+	 *
+	 * See WordPress repository docs for more information on banners:
+	 * https://wordpress.org/plugins/about/faq/#banners
+	 *
+	 * @param Wpup_Package $package
+	 * @return array|null
+	 */
+	protected function getBanners(Wpup_Package $package) {
+		//Find the normal banner first. The file name should be slug-772x250.ext.
+		$basePath = $this->bannerDirectory . '/' . $package->slug;
+		$extensionPattern = '{png,jpg,jpeg}';
+
+		$smallBanners = glob($basePath . '-772x250.' . $extensionPattern, GLOB_BRACE | GLOB_NOESCAPE);
+		if ( !empty($smallBanners) ) {
+			$banners = array('low' => $this->generateBannerUrl(basename(reset($smallBanners))));
+
+			//Then find the high-DPI banner.
+			$bigBanners = glob($basePath . '-1544x500.' . $extensionPattern, GLOB_BRACE | GLOB_NOESCAPE);
+			if ( !empty($bigBanners) ) {
+				$banners['high'] = $this->generateBannerUrl(basename(reset($bigBanners)));
+			}
+
+			return $banners;
+		}
+
+		return null;
+	}
+
+	/**
+	 * Get a publicly accessible URL for a plugin banner.
+	 *
+	 * @param string $relativeFileName Banner file name relative to the "banners" subdirectory.
+	 * @return string
+	 */
+	protected function generateBannerUrl($relativeFileName) {
+		//The current implementation is trivially simple, but you could override this method
+		//to (for example) create URLs that don't rely on the banner directory being public.
+		return $this->serverUrl . 'banners/' . $relativeFileName;
 	}
 
 	/**
