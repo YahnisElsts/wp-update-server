@@ -201,7 +201,7 @@ class Wpup_UpdateServer {
 	 * @param Wpup_Request $request
 	 * @return array Filtered metadata.
 	 */
-	protected function filterMetadata($meta, $request) {
+	protected function filterMetadata($meta, /** @noinspection PhpUnusedParameterInspection */ $request) {
 		//By convention, un-set properties are omitted.
 		$meta = array_filter($meta, function ($value) {
 			return $value !== null;
