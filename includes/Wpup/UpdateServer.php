@@ -1,8 +1,15 @@
 <?php
 class Wpup_UpdateServer {
+	const FILE_PER_DAY = 'Y-m-d';
+	const FILE_PER_MONTH = 'Y-m';
+
 	protected $packageDirectory;
-	protected $logDirectory;
 	protected $bannerDirectory;
+
+	protected $logDirectory;
+	protected $logRotationEnabled = false;
+	protected $logDateSuffix = null;
+	protected $logBackupCount = 0;
 
 	protected $cache;
 	protected $serverUrl;
@@ -315,7 +322,11 @@ class Wpup_UpdateServer {
 	 * @param Wpup_Request $request
 	 */
 	protected function logRequest($request) {
-		$logFile = $this->logDirectory . '/request.log';
+		$logFile = $this->getLogFileName();
+
+		//If the log file is new, we should rotate old logs.
+		$mustRotate = $this->logRotationEnabled && !file_exists($logFile);
+
 		$handle = fopen($logFile, 'a');
 		if ( $handle && flock($handle, LOCK_EX) ) {
 
@@ -338,11 +349,26 @@ class Wpup_UpdateServer {
 			$line = date('[Y-m-d H:i:s O]') . ' ' . implode("\t", $columns) . "\n";
 
 			fwrite($handle, $line);
+
+			if ( $mustRotate ) {
+				$this->rotateLogs();
+			}
 			flock($handle, LOCK_UN);
 		}
 		if ( $handle ) {
 			fclose($handle);
 		}
+	}
+
+	/**
+	 * @return string
+	 */
+	protected function getLogFileName() {
+		$path = $this->logDirectory . '/request';
+		if ( $this->logRotationEnabled ) {
+			$path .= '-' . date($this->logDateSuffix);
+		}
+		return $path . '.log';
 	}
 
 	/**
@@ -354,6 +380,49 @@ class Wpup_UpdateServer {
 	 */
 	protected function filterLogInfo($columns) {
 		return $columns;
+	}
+
+	/**
+	 * Enable basic log rotation.
+	 * Defaults to monthly rotation.
+	 *
+	 * @param string|null $rotationPeriod Either Wpup_UpdateServer::FILE_PER_DAY or Wpup_UpdateServer::FILE_PER_MONTH.
+	 * @param int $filesToKeep The max number of log files to keep. Zero = unlimited.
+	 */
+	public function enableLogRotation($rotationPeriod = null, $filesToKeep = 10) {
+		if ( !isset($rotationPeriod) ) {
+			$rotationPeriod = self::FILE_PER_MONTH;
+		}
+
+		$this->logDateSuffix = $rotationPeriod;
+		$this->logBackupCount = $filesToKeep;
+		$this->logRotationEnabled = true;
+	}
+
+	/**
+	 * Delete old log files.
+	 */
+	protected function rotateLogs() {
+		//Skip GC of old files if the backup count is unlimited.
+		if ( $this->logBackupCount === 0 ) {
+			return;
+		}
+
+		//Find log files.
+		$logFiles = glob($this->logDirectory . '/request*.log', GLOB_NOESCAPE);
+		if ( count($logFiles) <= $this->logBackupCount ) {
+			return;
+		}
+
+		//Sort the files by name. Due to the date suffix format, this also sorts them by date.
+		usort($logFiles, 'strcmp');
+		//Put them in descending order.
+		$logFiles = array_reverse($logFiles);
+
+		//Keep the most recent $logBackupCount files, delete the rest.
+		foreach(array_slice($logFiles, $this->logBackupCount) as $fileName) {
+			@unlink($fileName);
+		}
 	}
 
 	/**
