@@ -90,7 +90,7 @@ See the [update checker docs](http://w-shadow.com/blog/2010/09/02/automatic-upda
 	```
 4. Add a `Details URI` header to your `style.css`:
 
-	```Details URI: http://example.com/my-theme-changelog.html```
+	`Details URI: http://example.com/my-theme-changelog.html`
   
 	This header specifies the page that the user will see if they click the "View version x.y.z details" link in an update notification. Set it to the URL of your "What’s New In Version z.y.z" page or the theme homepage.
 
@@ -212,3 +212,7 @@ $examplePlugin = new ExamplePlugin();
 ### Securing download links
 
 See [this blog post](http://w-shadow.com/blog/2013/03/19/plugin-updates-securing-download-links/) for a high-level overview and some brief examples.
+
+### Analytics
+
+You can use the [wp-update-server-stats](https://github.com/YahnisElsts/wp-update-server-stats) tool to parse server logs and display statistics like the number of active installs, active versions, and so on.
