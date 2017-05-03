@@ -3,6 +3,9 @@
 if ( !function_exists('Markdown') ) {
 	include 'markdown.php'; //Used to convert readme.txt contents to HTML.
 }
+if (!class_exists('ZipArchive') && !class_exists('PclZip')) {
+    include 'pclzip.php'; // Library for handling zip archives
+}
 
 class WshWordPressPackageParser {
 	/**
@@ -28,61 +31,127 @@ class WshWordPressPackageParser {
 			return false;
 		}
 
-		//Open the .zip
-		$zip = new ZipArchive();
-		if ( $zip->open($packageFilename) !== true ){
-			return false;
-		}
-
-		//Find and parse the plugin or theme file and (optionally) readme.txt.
 		$header = null;
 		$readme = null;
 		$pluginFile = null;
 		$stylesheet = null;
 		$type = null;
 
-		for ( $fileIndex = 0; ($fileIndex < $zip->numFiles) && (empty($readme) || empty($header)); $fileIndex++ ){
-			$info = $zip->statIndex($fileIndex);
+		//Open the .zip
+        if (!class_exists('ZipArchive')) {
+            $zip = new PclZip($packageFilename);
+            if (($files = $zip->listContent()) == 0) {
+                return false;
+            }
 
-			//Normalize filename: convert backslashes to slashes, remove leading slashes.
-			$fileName = trim(str_replace('\\', '/', $info['name']), '/');
-			$fileName = ltrim($fileName, '/');
+            //Find and parse the plugin or theme file and (optionally) readme.txt.
+            foreach ($files as $file) {
+                if ($file['folder'] == true) {
+                    continue;
+                }
 
-			$fileNameParts = explode('.', $fileName);
-			$extension = strtolower(end($fileNameParts));
-			$depth = substr_count($fileName, '/');
+    			//Normalize filename: convert backslashes to slashes, remove leading slashes.
+    			$fileName = trim(str_replace('\\', '/', $file['filename']), '/');
+    			$fileName = ltrim($fileName, '/');
 
-			//Skip empty files, directories and everything that's more than 1 sub-directory deep.
-			if ( ($depth > 1) || ($info['size'] == 0) ) {
-				continue;
-			}
+    			$fileNameParts = explode('.', $fileName);
+    			$extension = strtolower(end($fileNameParts));
+    			$depth = substr_count($fileName, '/');
 
-			//readme.txt (for plugins)?
-			if ( empty($readme) && (strtolower(basename($fileName)) == 'readme.txt') ){
-				//Try to parse the readme.
-				$readme = self::parseReadme($zip->getFromIndex($fileIndex), $applyMarkdown);
-			}
+    			//Skip empty files, directories and everything that's more than 1 sub-directory deep.
+    			if (($depth > 1) || ($file['size'] <= 0)) {
+    				continue;
+    			}
 
-			//Theme stylesheet?
-			if ( empty($header) && (strtolower(basename($fileName)) == 'style.css') ) {
-				$fileContents = substr($zip->getFromIndex($fileIndex), 0, 8*1024);
-				$header = self::getThemeHeaders($fileContents);
-				if ( !empty($header) ){
-					$stylesheet = $fileName;
-					$type = 'theme';
-				}
-			}
+    			//readme.txt (for plugins)?
+    			if (empty($readme) && (strtolower(basename($fileName)) == 'readme.txt')) {
+                    if (($readme = $zip->extract(PCLZIP_OPT_BY_INDEX, $file['index'], PCLZIP_OPT_EXTRACT_AS_STRING)) === 0) {
+                        return false;
+                    }
 
-			//Main plugin file?
-			if ( empty($header) && ($extension === 'php') ){
-				$fileContents = substr($zip->getFromIndex($fileIndex), 0, 8*1024);
-				$header = self::getPluginHeaders($fileContents);
-				if ( !empty($header) ){
-					$pluginFile = $fileName;
-					$type = 'plugin';
-				}
-			}
-		}
+    				//Try to parse the readme.
+                    $readme = self::parseReadme($readme[0]['content'], $applyMarkdown);
+    			}
+
+                //Theme stylesheet?
+    			if (empty($header) && (strtolower(basename($fileName)) == 'style.css')) {
+                    if (($fileContents = $zip->extract(PCLZIP_OPT_BY_INDEX, $file['index'], PCLZIP_OPT_EXTRACT_AS_STRING)) === 0) {
+                        return false;
+                    }
+                    $fileContents = substr($fileContents[0]['content'], 0, 8 * 1024);
+                    $header = self::getThemeHeaders($fileContents);
+                    if (!empty($header)) {
+                        $stylesheet = $fileName;
+                        $type = 'theme';
+                    }
+    			}
+
+    			//Main plugin file?
+    			if (empty($header) && ($extension === 'php')) {
+                    if (($fileContents = $zip->extract(PCLZIP_OPT_BY_INDEX, $file['index'], PCLZIP_OPT_EXTRACT_AS_STRING)) === 0) {
+                        return false;
+                    }
+                    $fileContents = substr($fileContents[0]['content'], 0, 8 * 1024);
+                    $header = self::getPluginHeaders($fileContents);
+                    if (!empty($header)) {
+                        $pluginFile = $fileName;
+                        $type = 'plugin';
+                    }
+    			}
+
+                if (!empty($readme) && !empty($header)) {
+                    break;
+                }
+            }
+        } else {
+            $zip = new ZipArchive();
+    		if ( $zip->open($packageFilename) !== true ){
+    			return false;
+    		}
+
+            for ( $fileIndex = 0; ($fileIndex < $zip->numFiles) && (empty($readme) || empty($header)); $fileIndex++ ){
+    			$info = $zip->statIndex($fileIndex);
+
+    			//Normalize filename: convert backslashes to slashes, remove leading slashes.
+    			$fileName = trim(str_replace('\\', '/', $info['name']), '/');
+    			$fileName = ltrim($fileName, '/');
+
+    			$fileNameParts = explode('.', $fileName);
+    			$extension = strtolower(end($fileNameParts));
+    			$depth = substr_count($fileName, '/');
+
+    			//Skip empty files, directories and everything that's more than 1 sub-directory deep.
+    			if ( ($depth > 1) || ($info['size'] == 0) ) {
+    				continue;
+    			}
+
+    			//readme.txt (for plugins)?
+    			if ( empty($readme) && (strtolower(basename($fileName)) == 'readme.txt') ){
+    				//Try to parse the readme.
+    				$readme = self::parseReadme($zip->getFromIndex($fileIndex), $applyMarkdown);
+    			}
+
+    			//Theme stylesheet?
+    			if ( empty($header) && (strtolower(basename($fileName)) == 'style.css') ) {
+    				$fileContents = substr($zip->getFromIndex($fileIndex), 0, 8*1024);
+    				$header = self::getThemeHeaders($fileContents);
+    				if ( !empty($header) ){
+    					$stylesheet = $fileName;
+    					$type = 'theme';
+    				}
+    			}
+
+    			//Main plugin file?
+    			if ( empty($header) && ($extension === 'php') ){
+    				$fileContents = substr($zip->getFromIndex($fileIndex), 0, 8*1024);
+    				$header = self::getPluginHeaders($fileContents);
+    				if ( !empty($header) ){
+    					$pluginFile = $fileName;
+    					$type = 'plugin';
+    				}
+    			}
+    		}
+        }
 
 		if ( empty($type) ){
 			return false;
@@ -276,7 +345,7 @@ class WshWordPressPackageParser {
 
 		//For backward compatibility by default Title is the same as Name.
 		$headers['Title'] = $headers['Name'];
-		
+
 		//"Depends" is a comma-separated list. Convert it to an array.
 		if ( !empty($headers['Depends']) ){
 			$headers['Depends'] = array_map('trim', explode(',', $headers['Depends']));
@@ -384,27 +453,27 @@ class WshWordPressPackageParser {
  * Deprecated. Included for backwards-compatibility.
  *
  * This is an utility function that scans the input file (assumed to be a ZIP archive)
- * to find and parse the plugin's main PHP file and readme.txt file. Plugin metadata from 
- * both files is assembled into an associative array. The structure if this array is 
- * compatible with the format of the metadata file used by the custom plugin update checker 
+ * to find and parse the plugin's main PHP file and readme.txt file. Plugin metadata from
+ * both files is assembled into an associative array. The structure if this array is
+ * compatible with the format of the metadata file used by the custom plugin update checker
  * library available at the below URL.
- * 
+ *
  * @see http://w-shadow.com/blog/2010/09/02/automatic-updates-for-any-plugin/
  * @see https://spreadsheets.google.com/pub?key=0AqP80E74YcUWdEdETXZLcXhjd2w0cHMwX2U1eDlWTHc&authkey=CK7h9toK&hl=en&single=true&gid=0&output=html
- * 
+ *
  * Requires the ZIP extension for PHP.
  * @see http://php.net/manual/en/book.zip.php
- * 
+ *
  * @param string|array $packageInfo Either path to a ZIP file containing a WP plugin, or the return value of analysePluginPackage().
- * @return array Associative array  
+ * @return array Associative array
  */
 function getPluginPackageMeta($packageInfo){
 	if ( is_string($packageInfo) && file_exists($packageInfo) ){
 		$packageInfo = WshWordPressPackageParser::parsePackage($packageInfo, true);
 	}
-	
+
 	$meta = array();
-	
+
 	if ( isset($packageInfo['header']) && !empty($packageInfo['header']) ){
 		$mapping = array(
 			'Name' => 'name',
@@ -416,16 +485,16 @@ function getPluginPackageMeta($packageInfo){
 		foreach($mapping as $headerField => $metaField){
 			if ( array_key_exists($headerField, $packageInfo['header']) && !empty($packageInfo['header'][$headerField]) ){
 				$meta[$metaField] = $packageInfo['header'][$headerField];
-			} 
+			}
 		}
 	}
-	
+
 	if ( !empty($packageInfo['readme']) ){
 		$mapping = array('requires', 'tested');
 		foreach($mapping as $readmeField){
 			if ( !empty($packageInfo['readme'][$readmeField]) ){
 				$meta[$readmeField] = $packageInfo['readme'][$readmeField];
-			} 
+			}
 		}
 		if ( !empty($packageInfo['readme']['sections']) && is_array($packageInfo['readme']['sections']) ){
 			foreach($packageInfo['readme']['sections'] as $sectionName => $sectionContent){
@@ -433,7 +502,7 @@ function getPluginPackageMeta($packageInfo){
 				$meta['sections'][$sectionName] = $sectionContent;
 			}
 		}
-		
+
 		//Check if we have an upgrade notice for this version
 		if ( isset($meta['sections']['upgrade_notice']) && isset($meta['version']) ){
 			$regex = "@<h4>\s*" . preg_quote($meta['version']) . "\s*</h4>[^<>]*?<p>(.+?)</p>@i";
@@ -442,10 +511,10 @@ function getPluginPackageMeta($packageInfo){
 			}
 		}
 	}
-	
+
 	if ( !empty($packageInfo['pluginFile']) ){
 		$meta['slug'] = strtolower(basename(dirname($packageInfo['pluginFile'])));
 	}
-		
+
 	return $meta;
 }
