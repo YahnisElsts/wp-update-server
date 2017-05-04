@@ -3,9 +3,6 @@
 if ( !function_exists('Markdown') ) {
 	include 'markdown.php'; //Used to convert readme.txt contents to HTML.
 }
-if (!class_exists('ZipArchive') && !class_exists('PclZip')) {
-    include 'pclzip.php'; // Library for handling zip archives
-}
 
 class WshWordPressPackageParser {
 	/**
@@ -38,120 +35,70 @@ class WshWordPressPackageParser {
 		$type = null;
 
 		//Open the .zip
-        if (!class_exists('ZipArchive')) {
-            $zip = new PclZip($packageFilename);
-            if (($files = $zip->listContent()) == 0) {
-                return false;
-            }
+		$zip = new Wpup_Archive();
+		if (!$zip->open($packageFilename) || !($files = $zip->listContent())) {
+			return false;
+		}
 
-            //Find and parse the plugin or theme file and (optionally) readme.txt.
-            foreach ($files as $file) {
-                if ($file['folder'] == true) {
-                    continue;
-                }
+		$files = $zip->listContent();
+		foreach ($files as $file)  {
+			if ($file['folder']) {
+				continue;
+			}
 
-    			//Normalize filename: convert backslashes to slashes, remove leading slashes.
-    			$fileName = trim(str_replace('\\', '/', $file['filename']), '/');
-    			$fileName = ltrim($fileName, '/');
+			//Normalize filename: convert backslashes to slashes, remove leading slashes.
+			$fileName = trim(str_replace('\\', '/', $file['filename']), '/');
+			$fileName = ltrim($fileName, '/');
 
-    			$fileNameParts = explode('.', $fileName);
-    			$extension = strtolower(end($fileNameParts));
-    			$depth = substr_count($fileName, '/');
+			$fileNameParts = explode('.', $fileName);
+			$extension = strtolower(end($fileNameParts));
+			$depth = substr_count($fileName, '/');
 
-    			//Skip empty files, directories and everything that's more than 1 sub-directory deep.
-    			if (($depth > 1) || ($file['size'] <= 0)) {
-    				continue;
-    			}
+			//Skip empty files, directories and everything that's more than 1 sub-directory deep.
+			if (($depth > 1) || ($file['size'] <= 0)) {
+				continue;
+			}
 
-    			//readme.txt (for plugins)?
-    			if (empty($readme) && (strtolower(basename($fileName)) == 'readme.txt')) {
-                    if (($readme = $zip->extract(PCLZIP_OPT_BY_INDEX, $file['index'], PCLZIP_OPT_EXTRACT_AS_STRING)) === 0) {
-                        return false;
-                    }
+			//readme.txt (for plugins)?
+			if (empty($readme) && (strtolower(basename($fileName)) == 'readme.txt')) {
+				if (($readme = $zip->extractFile($file['index'])) === 0) {
+					return false;
+				}
 
-    				//Try to parse the readme.
-                    $readme = self::parseReadme($readme[0]['content'], $applyMarkdown);
-    			}
+				//Try to parse the readme.
+				$readme = self::parseReadme($readme[0]['content'], $applyMarkdown);
+			}
 
-                //Theme stylesheet?
-    			if (empty($header) && (strtolower(basename($fileName)) == 'style.css')) {
-                    if (($fileContents = $zip->extract(PCLZIP_OPT_BY_INDEX, $file['index'], PCLZIP_OPT_EXTRACT_AS_STRING)) === 0) {
-                        return false;
-                    }
-                    $fileContents = substr($fileContents[0]['content'], 0, 8 * 1024);
-                    $header = self::getThemeHeaders($fileContents);
-                    if (!empty($header)) {
-                        $stylesheet = $fileName;
-                        $type = 'theme';
-                    }
-    			}
+			//Theme stylesheet?
+			if (empty($header) && (strtolower(basename($fileName)) == 'style.css')) {
+				if (($fileContents = $zip->extractFile($file['index'])) === 0) {
+					return false;
+				}
+				$fileContents = substr($fileContents[0]['content'], 0, 8 * 1024);
+				$header = self::getThemeHeaders($fileContents);
+				if (!empty($header)) {
+					$stylesheet = $fileName;
+					$type = 'theme';
+				}
+			}
 
-    			//Main plugin file?
-    			if (empty($header) && ($extension === 'php')) {
-                    if (($fileContents = $zip->extract(PCLZIP_OPT_BY_INDEX, $file['index'], PCLZIP_OPT_EXTRACT_AS_STRING)) === 0) {
-                        return false;
-                    }
-                    $fileContents = substr($fileContents[0]['content'], 0, 8 * 1024);
-                    $header = self::getPluginHeaders($fileContents);
-                    if (!empty($header)) {
-                        $pluginFile = $fileName;
-                        $type = 'plugin';
-                    }
-    			}
+			//Main plugin file?
+			if (empty($header) && ($extension === 'php')) {
+				if (!($fileContents = $zip->extractFile($file['index']))) {
+					return false;
+				}
+				$fileContents = substr($fileContents[0]['content'], 0, 8 * 1024);
+				$header = self::getPluginHeaders($fileContents);
+				if (!empty($header)) {
+					$pluginFile = $fileName;
+					$type = 'plugin';
+				}
+			}
 
-                if (!empty($readme) && !empty($header)) {
-                    break;
-                }
-            }
-        } else {
-            $zip = new ZipArchive();
-    		if ( $zip->open($packageFilename) !== true ){
-    			return false;
-    		}
-
-            for ( $fileIndex = 0; ($fileIndex < $zip->numFiles) && (empty($readme) || empty($header)); $fileIndex++ ){
-    			$info = $zip->statIndex($fileIndex);
-
-    			//Normalize filename: convert backslashes to slashes, remove leading slashes.
-    			$fileName = trim(str_replace('\\', '/', $info['name']), '/');
-    			$fileName = ltrim($fileName, '/');
-
-    			$fileNameParts = explode('.', $fileName);
-    			$extension = strtolower(end($fileNameParts));
-    			$depth = substr_count($fileName, '/');
-
-    			//Skip empty files, directories and everything that's more than 1 sub-directory deep.
-    			if ( ($depth > 1) || ($info['size'] == 0) ) {
-    				continue;
-    			}
-
-    			//readme.txt (for plugins)?
-    			if ( empty($readme) && (strtolower(basename($fileName)) == 'readme.txt') ){
-    				//Try to parse the readme.
-    				$readme = self::parseReadme($zip->getFromIndex($fileIndex), $applyMarkdown);
-    			}
-
-    			//Theme stylesheet?
-    			if ( empty($header) && (strtolower(basename($fileName)) == 'style.css') ) {
-    				$fileContents = substr($zip->getFromIndex($fileIndex), 0, 8*1024);
-    				$header = self::getThemeHeaders($fileContents);
-    				if ( !empty($header) ){
-    					$stylesheet = $fileName;
-    					$type = 'theme';
-    				}
-    			}
-
-    			//Main plugin file?
-    			if ( empty($header) && ($extension === 'php') ){
-    				$fileContents = substr($zip->getFromIndex($fileIndex), 0, 8*1024);
-    				$header = self::getPluginHeaders($fileContents);
-    				if ( !empty($header) ){
-    					$pluginFile = $fileName;
-    					$type = 'plugin';
-    				}
-    			}
-    		}
-        }
+			if (!empty($readme) && !empty($header)) {
+				break;
+			}
+		}
 
 		if ( empty($type) ){
 			return false;
@@ -477,10 +424,10 @@ function getPluginPackageMeta($packageInfo){
 	if ( isset($packageInfo['header']) && !empty($packageInfo['header']) ){
 		$mapping = array(
 			'Name' => 'name',
-		 	'Version' => 'version',
-		 	'PluginURI' => 'homepage',
-		 	'Author' => 'author',
-		 	'AuthorURI' => 'author_homepage',
+			'Version' => 'version',
+			'PluginURI' => 'homepage',
+			'Author' => 'author',
+			'AuthorURI' => 'author_homepage',
 		);
 		foreach($mapping as $headerField => $metaField){
 			if ( array_key_exists($headerField, $packageInfo['header']) && !empty($packageInfo['header'][$headerField]) ){
@@ -517,4 +464,113 @@ function getPluginPackageMeta($packageInfo){
 	}
 
 	return $meta;
+}
+
+/**
+ * A ZipArchive/PclZip wrapper. Includes PclZip library if ZipArchive is not found and PclZip already does not exist.
+ */
+class Wpup_Archive {
+	protected $zipEnabled = false;
+	protected $archive = null;
+
+	public function __construct() {
+		if (class_exists('ZipArchive', false)) {
+			$this->zipEnabled = true;
+		} else if (!class_exists('PclZip', false)) {
+			include 'pclzip.php'; // Library for handling zip archives
+		}
+	}
+
+	/**
+	 * Open an existing zip archive file.
+	 *
+	 * @param string $path The absolute/relative path to an existing .zip file.
+	 * @return mixed|false
+	 */
+	public function open($path) {
+		if ($this->archive !== null) {
+			if ($this->zipEnabled) {
+				$this->archive->close();
+			}
+			$this->archive = null;
+		}
+
+		if (!file_exists($path) || !is_readable($path)) {
+			return false;
+		}
+
+		if ($this->zipEnabled) {
+			$this->archive = new ZipArchive();
+			if ($this->archive->open($path) !== true) {
+				return false;
+			}
+		} else {
+			$this->archive = new PclZip($path);
+		}
+
+		return true;
+	}
+
+
+	/**
+	 * Get the full list of files within a zip archive as an array of file information.
+	 *
+	 * @return array|false
+	 */
+	public function listContent() {
+		if ($this->archive === null) return false;
+
+		$list = false;
+
+		if ($this->zipEnabled) {
+			$list = array();
+
+			for ($i = 0; $i < $zip->numFiles; $i++) {
+				$info = $this->archive->statIndex($i);
+
+				$item = array(
+					'filename' => $info['name'],
+					'size' => $info['size'],
+					'index' => $info['index'],
+					'compressed_size' => $info['comp_size'],
+					'mtime' => $info['mtime'],
+					'folder' => false,
+				);
+
+				if (strrpos($item['filename'], '/') == strlen($item['filename']) - 1) {
+					$item['folder'] = true;
+				}
+
+				$info[] = $item;
+			}
+
+		} else if (($list = $this->archive->listContent()) == 0) {
+			return false;
+		}
+
+		return $list;
+	}
+
+	/**
+	 * Extract the requested file as a string.
+	 *
+	 * @param int $index The index of the requested file in the zip archive.
+	 * @return string|false
+	 */
+	public function extractFile($index) {
+		if ($this->archive === null) return false;
+
+		$content = false;
+
+		if ($this->zipEnabled) {
+			$content = $this->archive->getFromIndex($index);
+		} else {
+			if (($content = $this->archive->extract(PCLZIP_OPT_BY_INDEX, $index, PCLZIP_OPT_EXTRACT_AS_STRING)) == 0) {
+				return false;
+			}
+			$content = $content[0]['content'];
+		}
+
+		return $content;
+	}
 }
