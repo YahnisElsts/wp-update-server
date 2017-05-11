@@ -476,7 +476,7 @@ abstract class WshWpp_Archive {
 	/**
 	 * Get the contents of a specific file.
 	 *
-	 * @param $file
+	 * @param array $file
 	 * @return string|false
 	 */
 	abstract public function getFileContents($file);
@@ -535,7 +535,9 @@ class WshWpp_PclZipArchive extends WshWpp_Archive {
 	}
 
 	public static function open($zipFileName) {
-		require_once dirname(__FILE__) . '/pclzip.php';
+		if ( !class_exists('PclZip', false) ) {
+			require_once dirname(__FILE__) . '/pclzip.php';
+		}
 		return new self($zipFileName);
 	}
 
