@@ -153,7 +153,7 @@ class Wpup_UpdateServer {
 			$this->exitWithError('You must specify a package slug.', 400);
 		}
 		if ( $request->package === null ) {
-			$this->exitWithError(sprintf('Package "%s" not found', htmlentities($request->slug)), 404);
+			$this->exitWithError('Package not found', 404);
 		}
 	}
 
