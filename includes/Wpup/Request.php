@@ -30,8 +30,8 @@ class Wpup_Request {
 		$this->clientIp = $clientIp;
 		$this->httpMethod = strtoupper($httpMethod);
 
-		$this->action = $this->param('action', '');
-		$this->slug = $this->param('slug', '');
+		$this->action = preg_replace('@[^a-z0-9\-_]@i', '', $this->param('action', ''));
+		$this->slug = preg_replace('@[:?/\\\]@i', '', $this->param('slug', ''));
 
 		//If the request was made via the WordPress HTTP API we can usually
 		//get WordPress version and site URL from the user agent.
