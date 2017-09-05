@@ -186,10 +186,10 @@ class ExamplePlugin {
 	
 	public function handleUpdateApiRequest() {
 		if ( get_query_var('update_action') ) {
-			$this->updateServer->handleRequest(array(
+			$this->updateServer->handleRequest(array_merge($_GET, array(
 				'action' => get_query_var('update_action'),
 				'slug'   => get_query_var('update_slug'),
-			));
+			)));
 		}
 	}
 }
