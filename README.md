@@ -59,7 +59,7 @@ Now that you have the server ready to go, the next step is to make your plugin q
 
 	```php
 	require 'path/to/plugin-update-checker/plugin-update-checker.php';
-	$MyUpdateChecker = PucFactory::buildUpdateChecker(
+	$MyUpdateChecker = Puc_v4_Factory::buildUpdateChecker(
 		'http://example.com/wp-update-server/?action=get_metadata&slug=plugin-directory-name', //Metadata URL.
 		__FILE__, //Full path to the main plugin file.
 		'plugin-directory-name' //Plugin slug. Usually it's the same as the name of the directory.
@@ -97,7 +97,9 @@ See the [update checker docs](http://w-shadow.com/blog/2010/09/02/automatic-upda
 Like with plugin updates, the theme update checker will query the server for theme details every 12 hours and display an update notification in the WordPress Dashboard if a new version is available.
 
 See the [theme update checker docs](http://w-shadow.com/blog/2011/06/02/automatic-updates-for-commercial-themes/) for more information.
-	
+
+**Update:** The [plugin-update-checker](https://github.com/YahnisElsts/plugin-update-checker) library now also supports theme updates. The old theme update checker is no longer maintained.
+
 ## Advanced Topics
 
 ### Logging
