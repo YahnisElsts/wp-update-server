@@ -98,7 +98,7 @@ Like with plugin updates, the theme update checker will query the server for the
 
 See the [theme update checker docs](http://w-shadow.com/blog/2011/06/02/automatic-updates-for-commercial-themes/) for more information.
 
-**Update:** The [plugin-update-checker](https://github.com/YahnisElsts/plugin-update-checker) library now also supports theme updates. The old theme update checker is no longer maintained.
+**Update:** The [plugin-update-checker](https://github.com/YahnisElsts/plugin-update-checker) library now also supports theme updates. The old theme update checker is no longer actively maintained.
 
 ## Advanced Topics
 
