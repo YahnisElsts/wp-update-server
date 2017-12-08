@@ -5,6 +5,7 @@ class Wpup_UpdateServer {
 
 	protected $packageDirectory;
 	protected $bannerDirectory;
+	protected $assetDirectories = array();
 
 	protected $logDirectory;
 	protected $logRotationEnabled = false;
@@ -27,7 +28,13 @@ class Wpup_UpdateServer {
 		$this->serverUrl = $serverUrl;
 		$this->packageDirectory = $serverDirectory . '/packages';
 		$this->logDirectory = $serverDirectory . '/logs';
+
 		$this->bannerDirectory = $serverDirectory . '/banners';
+		$this->assetDirectories = array(
+			'banners' => $this->bannerDirectory,
+			'icons'   => $serverDirectory . '/icons',
+		);
+
 		$this->cache = new Wpup_FileCache($serverDirectory . '/cache');
 	}
 
@@ -181,6 +188,7 @@ class Wpup_UpdateServer {
 		$meta = $request->package->getMetadata();
 		$meta['download_url'] = $this->generateDownloadUrl($request->package);
 		$meta['banners'] = $this->getBanners($request->package);
+		$meta['icons'] = $this->getIcons($request->package);
 
 		$meta = $this->filterMetadata($meta, $request);
 
@@ -285,17 +293,14 @@ class Wpup_UpdateServer {
 	 */
 	protected function getBanners(Wpup_Package $package) {
 		//Find the normal banner first. The file name should be slug-772x250.ext.
-		$basePath = $this->bannerDirectory . '/' . $package->slug;
-		$extensionPattern = '{png,jpg,jpeg}';
-
-		$smallBanners = glob($basePath . '-772x250.' . $extensionPattern, GLOB_BRACE | GLOB_NOESCAPE);
-		if ( !empty($smallBanners) ) {
-			$banners = array('low' => $this->generateBannerUrl(basename(reset($smallBanners))));
+		$smallBanner = $this->findFirstAsset($package, 'banners', '-772x250');
+		if ( !empty($smallBanner) ) {
+			$banners = array('low' => $smallBanner);
 
 			//Then find the high-DPI banner.
-			$bigBanners = glob($basePath . '-1544x500.' . $extensionPattern, GLOB_BRACE | GLOB_NOESCAPE);
-			if ( !empty($bigBanners) ) {
-				$banners['high'] = $this->generateBannerUrl(basename(reset($bigBanners)));
+			$bigBanner = $this->findFirstAsset($package, 'banners', '-1544x500');
+			if ( !empty($bigBanner) ) {
+				$banners['high'] = $bigBanner;
 			}
 
 			return $banners;
@@ -307,13 +312,77 @@ class Wpup_UpdateServer {
 	/**
 	 * Get a publicly accessible URL for a plugin banner.
 	 *
+	 * @deprecated Use generateAssetUrl() instead.
 	 * @param string $relativeFileName Banner file name relative to the "banners" subdirectory.
 	 * @return string
 	 */
 	protected function generateBannerUrl($relativeFileName) {
+		return $this->generateAssetUrl('banners', $relativeFileName);
+	}
+
+	/**
+	 * Find plugin icons.
+	 *
+	 * @param Wpup_Package $package
+	 * @return array|null
+	 */
+	protected function getIcons(Wpup_Package $package) {
+		$icons = array(
+			'1x'  => $this->findFirstAsset($package, 'icons', '-128x128'),
+			'2x'  => $this->findFirstAsset($package, 'icons', '-256x256'),
+			'svg' => $this->findFirstAsset($package, 'icons', '', 'svg'),
+		);
+
+		$icons = array_filter($icons);
+		if ( !empty($icons) ) {
+			return $icons;
+		}
+		return null;
+	}
+
+	/**
+	 * Get the first asset that has the specified suffix and file name extension.
+	 *
+	 * @param Wpup_Package $package
+	 * @param string $assetType Either 'icons' or 'banners'.
+	 * @param string $suffix Optional file name suffix. For example, "-128x128" for plugin icons.
+	 * @param array|string $extensions Optional. Defaults to common image file formats.
+	 * @return null|string Asset URL, or NULL if there are no matching assets.
+	 */
+	protected function findFirstAsset(
+		Wpup_Package $package,
+		$assetType = 'banners',
+		$suffix = '',
+		$extensions = array('png', 'jpg', 'jpeg')
+	) {
+		$pattern = $this->assetDirectories[$assetType] . '/' . $package->slug . $suffix;
+
+		if ( is_array($extensions) ) {
+			$extensionPattern = '{' . implode(',', $extensions) . '}';
+		} else {
+			$extensionPattern = $extensions;
+		}
+
+		$assets = glob($pattern . '.' . $extensionPattern, GLOB_BRACE | GLOB_NOESCAPE);
+		if ( !empty($assets) ) {
+			$firstFile = basename(reset($assets));
+			return $this->generateAssetUrl($assetType, $firstFile);
+		}
+		return null;
+	}
+
+	/**
+	 * Get a publicly accessible URL for a plugin asset.
+	 *
+	 * @param string $assetType Either 'icons' or 'banners'.
+	 * @param string $relativeFileName File name relative to the asset directory.
+	 * @return string
+	 */
+	protected function generateAssetUrl($assetType, $relativeFileName) {
 		//The current implementation is trivially simple, but you could override this method
-		//to (for example) create URLs that don't rely on the banner directory being public.
-		return $this->serverUrl . 'banners/' . $relativeFileName;
+		//to (for example) create URLs that don't rely on the directory being public.
+		$subDirectory = basename($this->assetDirectories[$assetType]);
+		return $this->serverUrl . $subDirectory . '/' . $relativeFileName;
 	}
 
 	/**
@@ -478,7 +547,7 @@ class Wpup_UpdateServer {
 			504 => '504 Gateway Timeout',
 			505 => '505 HTTP Version Not Supported'
 		);
-		
+
 		if ( !isset($_SERVER['SERVER_PROTOCOL']) || $_SERVER['SERVER_PROTOCOL'] === '' ) {
 			$protocol = 'HTTP/1.1';
 		} else {
@@ -493,7 +562,7 @@ class Wpup_UpdateServer {
 			header('X-Ws-Update-Server-Error: ' . $httpStatus, true, $httpStatus);
 			$title = 'HTTP ' . $httpStatus;
 		}
-		
+
 		if ( $message === '' ) {
 			$message = $title;
 		}
