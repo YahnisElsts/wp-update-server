@@ -17,6 +17,10 @@ class Wpup_UpdateServer {
 	protected $startTime = 0;
 	protected $packageFileLoader = array('Wpup_Package', 'fromArchive');
 
+	protected $ipAnonymizationEnabled = false;
+	protected $ip4Mask = '';
+	protected $ip6Mask = '';
+
 	public function __construct($serverUrl = null, $serverDirectory = null) {
 		if ( $serverDirectory === null ) {
 			$serverDirectory = realpath(__DIR__ . '/../..');
@@ -34,6 +38,12 @@ class Wpup_UpdateServer {
 			'banners' => $this->bannerDirectory,
 			'icons'   => $serverDirectory . '/icons',
 		);
+
+		//Set up the IP anonymization masks.
+		//For 32-bit addresses, replace the last 8 bits with zeros.
+		$this->ip4Mask = pack('H*', 'ffffff00');
+		//For 128-bit addresses, zero out the last 80 bits.
+		$this->ip6Mask = pack('H*', 'ffffffffffff00000000000000000000');
 
 		$this->cache = new Wpup_FileCache($serverDirectory . '/cache');
 	}
@@ -399,8 +409,13 @@ class Wpup_UpdateServer {
 		$handle = fopen($logFile, 'a');
 		if ( $handle && flock($handle, LOCK_EX) ) {
 
+			$loggedIp = $request->clientIp;
+			if ( $this->ipAnonymizationEnabled ) {
+				$loggedIp = $this->anonymizeIp($loggedIp);
+			}
+
 			$columns = array(
-				str_pad($request->clientIp,  15, ' '),
+				str_pad($loggedIp,  15, ' '),
 				str_pad($request->httpMethod, 4, ' '),
 				$request->param('action', '-'),
 				$request->param('slug', '-'),
@@ -492,6 +507,34 @@ class Wpup_UpdateServer {
 		foreach(array_slice($logFiles, $this->logBackupCount) as $fileName) {
 			@unlink($fileName);
 		}
+	}
+
+	/**
+	 * Enable basic IP address anonymization.
+	 */
+	public function enableIpAnonymization() {
+		$this->ipAnonymizationEnabled = true;
+	}
+
+	/**
+	 * Anonymize an IP address by replacing the last byte(s) with zeros.
+	 *
+	 * @param string $ip A valid IP address such as "12.45.67.89" or "2001:db8:85a3::8a2e:370:7334".
+	 * @return string
+	 */
+	protected function anonymizeIp($ip) {
+		$binaryIp = @inet_pton($ip);
+		if ( strlen($binaryIp) === 4 ) {
+			//IPv4
+			$anonBinaryIp = $binaryIp & $this->ip4Mask;
+		} else if ( strlen($binaryIp) === 16 ) {
+			//IPv6
+			$anonBinaryIp = $binaryIp & $this->ip6Mask;
+		} else {
+			//The input is not a valid IPv4 or IPv6 address. Return it unmodified.
+			return $ip;
+		}
+		return inet_ntop($anonBinaryIp);
 	}
 
 	/**
