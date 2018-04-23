@@ -415,16 +415,16 @@ class Wpup_UpdateServer {
 			}
 
 			$columns = array(
-				str_pad($loggedIp,  15, ' '),
-				str_pad($request->httpMethod, 4, ' '),
-				$request->param('action', '-'),
-				$request->param('slug', '-'),
-				$request->param('installed_version', '-'),
-				isset($request->wpVersion) ? $request->wpVersion : '-',
-				isset($request->wpSiteUrl) ? $request->wpSiteUrl : '-',
-				http_build_query($request->query, '', '&')
+				'ip'                => str_pad($loggedIp, 15, ' '),
+				'http_method'       => str_pad($request->httpMethod, 4, ' '),
+				'action'            => $request->param('action', '-'),
+				'slug'              => $request->param('slug', '-'),
+				'installed_version' => $request->param('installed_version', '-'),
+				'wp_version'        => isset($request->wpVersion) ? $request->wpVersion : '-',
+				'site_url'          => isset($request->wpSiteUrl) ? $request->wpSiteUrl : '-',
+				'query'             => http_build_query($request->query, '', '&'),
 			);
-			$columns = $this->filterLogInfo($columns);
+			$columns = $this->filterLogInfo($columns, $request);
 
 			//Set the time zone to whatever the default is to avoid PHP notices.
 			//Will default to UTC if it's not set properly in php.ini.
@@ -460,9 +460,10 @@ class Wpup_UpdateServer {
 	 * Intended to be overridden in child classes.
 	 *
 	 * @param array $columns List of columns in the log entry.
+	 * @param Wpup_Request|null $request
 	 * @return array
 	 */
-	protected function filterLogInfo($columns) {
+	protected function filterLogInfo($columns, /** @noinspection PhpUnusedParameterInspection */$request = null) {
 		return $columns;
 	}
 
