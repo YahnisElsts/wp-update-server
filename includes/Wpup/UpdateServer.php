@@ -415,8 +415,8 @@ class Wpup_UpdateServer {
 			}
 
 			$columns = array(
-				'ip'                => str_pad($loggedIp, 15, ' '),
-				'http_method'       => str_pad($request->httpMethod, 4, ' '),
+				'ip'                => $loggedIp,
+				'http_method'       => $request->httpMethod,
 				'action'            => $request->param('action', '-'),
 				'slug'              => $request->param('slug', '-'),
 				'installed_version' => $request->param('installed_version', '-'),
@@ -425,6 +425,14 @@ class Wpup_UpdateServer {
 				'query'             => http_build_query($request->query, '', '&'),
 			);
 			$columns = $this->filterLogInfo($columns, $request);
+			$columns = $this->escapeLogInfo($columns);
+
+			if ( isset($columns['ip']) ) {
+				$columns['ip'] = str_pad($columns['ip'], 15, ' ');
+			}
+			if ( isset($columns['http_method']) ) {
+				$columns['http_method'] = str_pad($columns['http_method'], 4, ' ');
+			}
 
 			//Set the time zone to whatever the default is to avoid PHP notices.
 			//Will default to UTC if it's not set properly in php.ini.
@@ -465,6 +473,58 @@ class Wpup_UpdateServer {
 	 */
 	protected function filterLogInfo($columns, /** @noinspection PhpUnusedParameterInspection */$request = null) {
 		return $columns;
+	}
+
+	/**
+	 * Escapes passed log data so it can be safely written into a plain text file.
+	 *
+	 * @param string[] $columns List of columns in the log entry.
+	 * @return string[] Escaped $columns.
+	 */
+	protected function escapeLogInfo(array $columns) {
+		return array_map(array($this, 'escapeLogValue'), $columns);
+	}
+
+	/**
+	 * Escapes passed value to be safely written into a plain text file.
+	 *
+	 * @param string|null $value Value to escape.
+	 * @return string|null Escaped value.
+	 */
+	protected function escapeLogValue($value) {
+
+		if (!isset($value)) {
+			return null;
+		}
+
+		$value = (string)$value;
+
+		$regex = '/[[:^graph:]]/';
+
+		//preg_replace_callback will return NULL if the input contains invalid Unicode sequences,
+		//so only enable the Unicode flag if the input encoding looks valid.
+		/** @noinspection PhpComposerExtensionStubsInspection */
+		if ( function_exists('mb_check_encoding') && mb_check_encoding($value, 'UTF-8') ) {
+			$regex = $regex . 'u';
+		}
+
+		$value = str_replace('\\', '\\\\', $value);
+		$value = preg_replace_callback(
+			$regex,
+			function(array $matches) {
+				$length = strlen($matches[0]);
+				$escaped = '';
+				for($i = 0; $i < $length; $i++) {
+					//Convert the character to a hexadecimal escape sequence.
+					$hexCode = dechex(ord($matches[0][$i]));
+					$escaped .= '\x' . strtoupper(str_pad($hexCode, 2, '0', STR_PAD_LEFT));
+				}
+				return $escaped;
+			},
+			$value
+		);
+
+		return $value;
 	}
 
 	/**
