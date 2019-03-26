@@ -3,6 +3,7 @@ class Wpup_UpdateServer {
 	const FILE_PER_DAY = 'Y-m-d';
 	const FILE_PER_MONTH = 'Y-m';
 
+	protected $serverDirectory;
 	protected $packageDirectory;
 	protected $bannerDirectory;
 	protected $assetDirectories = array();
@@ -25,6 +26,7 @@ class Wpup_UpdateServer {
 		if ( $serverDirectory === null ) {
 			$serverDirectory = realpath(__DIR__ . '/../..');
 		}
+		$this->serverDirectory = $serverDirectory;
 		if ( $serverUrl === null ) {
 			$serverUrl = self::guessServerUrl();
 		}
@@ -33,10 +35,10 @@ class Wpup_UpdateServer {
 		$this->packageDirectory = $serverDirectory . '/packages';
 		$this->logDirectory = $serverDirectory . '/logs';
 
-		$this->bannerDirectory = $serverDirectory . '/banners';
+		$this->bannerDirectory = $serverDirectory . '/package-assets/banners';
 		$this->assetDirectories = array(
 			'banners' => $this->bannerDirectory,
-			'icons'   => $serverDirectory . '/icons',
+			'icons'   => $serverDirectory . '/package-assets/icons',
 		);
 
 		//Set up the IP anonymization masks.
@@ -391,7 +393,13 @@ class Wpup_UpdateServer {
 	protected function generateAssetUrl($assetType, $relativeFileName) {
 		//The current implementation is trivially simple, but you could override this method
 		//to (for example) create URLs that don't rely on the directory being public.
-		$subDirectory = basename($this->assetDirectories[$assetType]);
+		$directory = $this->assetDirectories[$assetType];
+		if ( strpos($directory, $this->serverDirectory) === 0 ) {
+			$subDirectory = substr($directory, strlen($this->serverDirectory) + 1);
+		} else {
+			$subDirectory = basename($directory);
+		}
+		$subDirectory = trim($subDirectory, '/\\');
 		return $this->serverUrl . $subDirectory . '/' . $relativeFileName;
 	}
 
