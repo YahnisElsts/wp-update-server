@@ -20,6 +20,7 @@ class Wpup_ZipMetadataParser {
 		'ThemeURI' => 'homepage',
 		'Author' => 'author',
 		'AuthorURI' => 'author_homepage',
+		'RequiresPHP' => 'requires_php',
 		'DetailsURI' => 'details_url', //Only for themes.
 		'Depends' => 'depends', // plugin-dependencies plugin
 		'Provides' => 'provides', // plugin-dependencies plugin
@@ -31,6 +32,7 @@ class Wpup_ZipMetadataParser {
 	protected $readmeMap = array(
 		'requires',
 		'tested',
+		'requires_php',
 	);
 
 	/**
