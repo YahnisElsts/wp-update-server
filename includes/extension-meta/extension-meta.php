@@ -1,8 +1,8 @@
 <?php
 
-if ( !class_exists('\Michelf\MarkdownExtra') ) {
+if ( !class_exists('Parsedown') ) {
 	//Used to convert readme.txt contents to HTML.
-	require_once __DIR__ . '/php-markdown/MarkdownExtra.inc.php';
+	require_once __DIR__ . '/../Parsedown/Parsedown.php';
 }
 
 class WshWordPressPackageParser {
@@ -225,7 +225,7 @@ class WshWordPressPackageParser {
 	private static function applyMarkdown($text){
 		//The WP standard for readme files uses some custom markup, like "= H4 headers ="
 		$text = preg_replace('@^\s*=\s*(.+?)\s*=\s*$@m', "<h4>$1</h4>\n", $text);
-		return \Michelf\MarkdownExtra::defaultTransform($text);
+		return Parsedown::instance()->text($text);
 	}
 
 	/**
