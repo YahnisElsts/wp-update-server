@@ -105,7 +105,7 @@ class Wpup_ZipMetadataParser {
 
 			//Update cache.
 			if ( isset($this->cache) ){
-				$this->cache->set($cacheKey, $this->metadata, self::$cacheTime);
+				$this->cache->set($cacheKey, $this->metadata, static::$cacheTime);
 			}
 		}
 	}
