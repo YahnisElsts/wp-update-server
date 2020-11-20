@@ -35,9 +35,15 @@ class Wpup_Request {
 
 		//If the request was made via the WordPress HTTP API we can usually
 		//get WordPress version and site URL from the user agent.
-		$regex = '@WordPress/(?P<version>\d[^;]*?);\s+(?P<url>https?://.+?)(?:\s|;|$)@i';
-		if ( preg_match($regex, $this->headers->get('User-Agent', ''), $matches) ) {
+		$userAgent = $this->headers->get('User-Agent', '');
+		$defaultRegex = '@WordPress/(?P<version>\d[^;]*?);\s+(?P<url>https?://.+?)(?:\s|;|$)@i';
+		$wpComRegex = '@WordPress\.com;\s+(?P<url>https?://.+?)(?:\s|;|$)@i';
+		if ( preg_match($defaultRegex, $userAgent, $matches) ) {
+			//A regular WordPress site using the default user agent.
 			$this->wpVersion = $matches['version'];
+			$this->wpSiteUrl = $matches['url'];
+		} else if ( preg_match($wpComRegex, $userAgent, $matches) ) {
+			//A site hosted on WordPress.com. In this case, the user agent does not include a version number.
 			$this->wpSiteUrl = $matches['url'];
 		}
 	}
