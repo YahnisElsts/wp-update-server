@@ -1,4 +1,5 @@
 <?php
+
 class Wpup_UpdateServer {
 	const FILE_PER_DAY = 'Y-m-d';
 	const FILE_PER_MONTH = 'Y-m';
@@ -26,7 +27,7 @@ class Wpup_UpdateServer {
 		if ( $serverDirectory === null ) {
 			$serverDirectory = realpath(__DIR__ . '/../..');
 		}
-		$this->serverDirectory = $serverDirectory;
+		$this->serverDirectory = $this->normalizeFilePath($serverDirectory);
 		if ( $serverUrl === null ) {
 			$serverUrl = self::guessServerUrl();
 		}
@@ -60,7 +61,7 @@ class Wpup_UpdateServer {
 	 * @return string Url
 	 */
 	public static function guessServerUrl() {
-		$serverUrl = ( self::isSsl() ? 'https' : 'http' );
+		$serverUrl = (self::isSsl() ? 'https' : 'http');
 		$serverUrl .= '://' . $_SERVER['HTTP_HOST'];
 		$path = $_SERVER['SCRIPT_NAME'];
 
@@ -83,16 +84,16 @@ class Wpup_UpdateServer {
 	/**
 	 * Determine if ssl is used.
 	 *
+	 * @return bool True if SSL, false if not used.
 	 * @see WP core - wp-includes/functions.php
 	 *
-	 * @return bool True if SSL, false if not used.
 	 */
 	public static function isSsl() {
 		if ( isset($_SERVER['HTTPS']) ) {
 			if ( $_SERVER['HTTPS'] == '1' || strtolower($_SERVER['HTTPS']) === 'on' ) {
 				return true;
 			}
-		} elseif ( isset($_SERVER['SERVER_PORT']) && ( '443' == $_SERVER['SERVER_PORT'] ) ) {
+		} elseif ( isset($_SERVER['SERVER_PORT']) && ('443' == $_SERVER['SERVER_PORT']) ) {
 			return true;
 		}
 		return false;
@@ -240,7 +241,7 @@ class Wpup_UpdateServer {
 	 */
 	protected function actionDownload(Wpup_Request $request) {
 		//Required for IE, otherwise Content-Disposition may be ignored.
-		if(ini_get('zlib.output_compression')) {
+		if ( ini_get('zlib.output_compression') ) {
 			@ini_set('zlib.output_compression', 'Off');
 		}
 
@@ -289,7 +290,7 @@ class Wpup_UpdateServer {
 	protected function generateDownloadUrl(Wpup_Package $package) {
 		$query = array(
 			'action' => 'download',
-			'slug' => $package->slug,
+			'slug'   => $package->slug,
 		);
 		return self::addQueryArg($query, $this->serverUrl);
 	}
@@ -324,9 +325,9 @@ class Wpup_UpdateServer {
 	/**
 	 * Get a publicly accessible URL for a plugin banner.
 	 *
-	 * @deprecated Use generateAssetUrl() instead.
 	 * @param string $relativeFileName Banner file name relative to the "banners" subdirectory.
 	 * @return string
+	 * @deprecated Use generateAssetUrl() instead.
 	 */
 	protected function generateBannerUrl($relativeFileName) {
 		return $this->generateAssetUrl('banners', $relativeFileName);
@@ -393,7 +394,7 @@ class Wpup_UpdateServer {
 	protected function generateAssetUrl($assetType, $relativeFileName) {
 		//The current implementation is trivially simple, but you could override this method
 		//to (for example) create URLs that don't rely on the directory being public.
-		$directory = $this->assetDirectories[$assetType];
+		$directory = $this->normalizeFilePath($this->assetDirectories[$assetType]);
 		if ( strpos($directory, $this->serverDirectory) === 0 ) {
 			$subDirectory = substr($directory, strlen($this->serverDirectory) + 1);
 		} else {
@@ -401,6 +402,19 @@ class Wpup_UpdateServer {
 		}
 		$subDirectory = trim($subDirectory, '/\\');
 		return $this->serverUrl . $subDirectory . '/' . $relativeFileName;
+	}
+
+	/**
+	 * Convert all directory separators to forward slashes.
+	 *
+	 * @param string $path
+	 * @return string
+	 */
+	protected function normalizeFilePath($path) {
+		if ( !is_string($path) ) {
+			return $path;
+		}
+		return str_replace(array(DIRECTORY_SEPARATOR, '\\'), '/', $path);
 	}
 
 	/**
@@ -479,7 +493,7 @@ class Wpup_UpdateServer {
 	 * @param Wpup_Request|null $request
 	 * @return array
 	 */
-	protected function filterLogInfo($columns, /** @noinspection PhpUnusedParameterInspection */$request = null) {
+	protected function filterLogInfo($columns, /** @noinspection PhpUnusedParameterInspection */ $request = null) {
 		return $columns;
 	}
 
@@ -501,7 +515,7 @@ class Wpup_UpdateServer {
 	 */
 	protected function escapeLogValue($value) {
 
-		if (!isset($value)) {
+		if ( !isset($value) ) {
 			return null;
 		}
 
@@ -519,10 +533,10 @@ class Wpup_UpdateServer {
 		$value = str_replace('\\', '\\\\', $value);
 		$value = preg_replace_callback(
 			$regex,
-			function(array $matches) {
+			function (array $matches) {
 				$length = strlen($matches[0]);
 				$escaped = '';
-				for($i = 0; $i < $length; $i++) {
+				for ($i = 0; $i < $length; $i++) {
 					//Convert the character to a hexadecimal escape sequence.
 					$hexCode = dechex(ord($matches[0][$i]));
 					$escaped .= '\x' . strtoupper(str_pad($hexCode, 2, '0', STR_PAD_LEFT));
@@ -573,7 +587,7 @@ class Wpup_UpdateServer {
 		$logFiles = array_reverse($logFiles);
 
 		//Keep the most recent $logBackupCount files, delete the rest.
-		foreach(array_slice($logFiles, $this->logBackupCount) as $fileName) {
+		foreach (array_slice($logFiles, $this->logBackupCount) as $fileName) {
 			@unlink($fileName);
 		}
 	}
@@ -657,7 +671,7 @@ class Wpup_UpdateServer {
 			502 => '502 Bad Gateway',
 			503 => '503 Service Unavailable',
 			504 => '504 Gateway Timeout',
-			505 => '505 HTTP Version Not Supported'
+			505 => '505 HTTP Version Not Supported',
 		);
 
 		if ( !isset($_SERVER['SERVER_PROTOCOL']) || $_SERVER['SERVER_PROTOCOL'] === '' ) {
@@ -698,7 +712,7 @@ class Wpup_UpdateServer {
 	 * @param string $url The old URL. Optional, defaults to the request url without query arguments.
 	 * @return string New URL.
 	 */
-	protected static function addQueryArg($args, $url = null ) {
+	protected static function addQueryArg($args, $url = null) {
 		if ( !isset($url) ) {
 			$url = self::guessServerUrl();
 		}
@@ -714,7 +728,7 @@ class Wpup_UpdateServer {
 		$query = array_merge($query, $args);
 
 		//Remove null/false arguments.
-		$query = array_filter($query, function($value) {
+		$query = array_filter($query, function ($value) {
 			return ($value !== null) && ($value !== false);
 		});
 
