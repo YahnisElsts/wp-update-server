@@ -224,7 +224,7 @@ class WshWordPressPackageParser {
 	 */
 	private static function applyMarkdown($text){
 		//The WP standard for readme files uses some custom markup, like "= H4 headers ="
-		$text = preg_replace('@^\s*=\s*(.+?)\s*=\s*$@m', "<h4>$1</h4>\n", $text);
+		$text = preg_replace('@^\s*=\s*(.+?)\s*=\s*$@m', "\n####$1####\n", $text);
 		return Parsedown::instance()->text($text);
 	}
 
