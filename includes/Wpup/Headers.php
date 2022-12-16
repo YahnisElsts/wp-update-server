@@ -126,18 +126,22 @@ class Wpup_Headers implements ArrayAccess, IteratorAggregate, Countable {
 
 	/* ArrayAccess interface */
 
+	#[\ReturnTypeWillChange]
 	public function offsetExists($offset) {
 		return array_key_exists($offset, $this->headers);
 	}
 
+	#[\ReturnTypeWillChange]
 	public function offsetGet($offset) {
 		return $this->get($offset);
 	}
 
+	#[\ReturnTypeWillChange]
 	public function offsetSet($offset, $value) {
 		$this->set($offset, $value);
 	}
 
+	#[\ReturnTypeWillChange]
 	public function offsetUnset($offset) {
 		$name = $this->normalizeName($offset);
 		unset($this->headers[$name]);
@@ -145,12 +149,14 @@ class Wpup_Headers implements ArrayAccess, IteratorAggregate, Countable {
 
 	/* Countable interface */
 
+	#[\ReturnTypeWillChange]
 	public function count() {
 		return count($this->headers);
 	}
 
 	/* IteratorAggregate interface  */
 
+	#[\ReturnTypeWillChange]
 	public function getIterator() {
 		return new ArrayIterator($this->headers);
 	}
