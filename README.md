@@ -59,7 +59,9 @@ Now that you have the server ready to go, the next step is to make your plugin q
 
 	```php
 	require 'path/to/plugin-update-checker/plugin-update-checker.php';
-	$MyUpdateChecker = Puc_v4_Factory::buildUpdateChecker(
+	use YahnisElsts\PluginUpdateChecker\v5\PucFactory;
+	
+	$MyUpdateChecker = PucFactory::buildUpdateChecker(
 		'http://example.com/wp-update-server/?action=get_metadata&slug=plugin-directory-name', //Metadata URL.
 		__FILE__, //Full path to the main plugin file.
 		'plugin-directory-name' //Plugin slug. Usually it's the same as the name of the directory.
