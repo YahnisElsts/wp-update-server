@@ -11,6 +11,11 @@
  * @see https://github.com/YahnisElsts/wp-update-server/pull/11
  */
 class Wpup_FileCache implements Wpup_Cache {
+	//phpcs:disable WordPress.PHP.DiscouragedPHPFunctions.serialize_unserialize
+	//phpcs:disable WordPress.PHP.DiscouragedPHPFunctions.serialize_serialize
+	//Developers should not run an update server without a writeable cache directory.
+	//phpcs:disable WordPressVIPMinimum.Functions.RestrictedFunctions.file_ops_file_put_contents
+
 	protected $cacheDirectory;
 
 	public function __construct($cacheDirectory) {
@@ -26,6 +31,7 @@ class Wpup_FileCache implements Wpup_Cache {
 	public function get($key) {
 		$filename = $this->getCacheFilename($key);
 		if ( is_file($filename) && is_readable($filename) ) {
+			//phpcs:ignore WordPressVIPMinimum.Performance.FetchingRemoteData.FileGetContentsUnknown -- Not remote.
 			$cache = unserialize(base64_decode(file_get_contents($filename)));
 			if ( $cache['expiration_time'] < time() ) {
 				/* Could cause potential non-critical race condition
@@ -73,7 +79,11 @@ class Wpup_FileCache implements Wpup_Cache {
 	public function clear($key) {
 		$file = $this->getCacheFilename($key);
 		if ( is_file($file) ) {
+			//The cache directory should be writeable.
+			//phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.file_ops_unlink
 			unlink($file);
 		}
 	}
+
+	//phpcs:enable
 }

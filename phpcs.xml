@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<ruleset name="WPUP_PHPCS_Settings">
+    <description>PHPCS settings for WP Update Server</description>
+
+    <arg name="basepath" value="."/>
+    <arg name="warning-severity" value="5"/>
+    <arg name="error-severity" value="5"/>
+    <arg value="sp"/>
+    
+    <!-- Check the current directory by default -->
+    <file>./</file>
+    
+    <!-- Include the WordPress-VIP-Go standard -->
+    <rule ref="WordPress-VIP-Go">
+		<!-- This project is not exclusive to WP VIP, so it doesn't use vip_safe_wp_remote_get(). -->
+		<exclude name="WordPressVIPMinimum.Functions.RestrictedFunctions.wp_remote_get_wp_remote_get" />
+		
+		<!-- As a server, WPUP uses basic file system functions for logging and caching. -->
+		<exclude name="WordPress.WP.AlternativeFunctions.file_system_read_fopen" />
+		<exclude name="WordPressVIPMinimum.Functions.RestrictedFunctions.file_ops_fwrite" />
+		<exclude name="WordPressVIPMinimum.Functions.RestrictedFunctions.file_ops_flock" />
+		<exclude name="WordPressVIPMinimum.Functions.RestrictedFunctions.file_ops_unlink" />
+		
+		<!-- WPUP is all about server-side based logic, so this rule doens't apply. -->
+		<exclude name="WordPressVIPMinimum.Variables.RestrictedVariables.cache_constraints___SERVER__REMOTE_ADDR__" />
+    </rule>
+    
+    <!-- Exclude packages (plugin and theme ZIP files) -->
+    <exclude-pattern type="relative">^packages/*</exclude-pattern>
+    <!-- Exclude the log and cache directories -->
+    <exclude-pattern type="relative">^logs/*</exclude-pattern>
+    <exclude-pattern type="relative">^cache/*</exclude-pattern>
+    
+    <!-- Exclude external and third-party libraries -->
+    <exclude-pattern type="relative">^includes/Parsedown/*</exclude-pattern>
+    <exclude-pattern type="relative">^includes/extension-meta/*</exclude-pattern>
+</ruleset>
