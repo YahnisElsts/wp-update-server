@@ -13,7 +13,8 @@
 		}
 	],
 	"require": {
-		"php": ">=5.3.0"
+		"php": ">=5.3.0",
+		"ext-json": "*"
 	},
 	"suggest": {
 		"ext-mbstring": "Used for escaping log values in a utf8 compatible manner. If the extension isn't installed logged values are handled as single-byte character strings."
