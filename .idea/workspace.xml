@@ -53,7 +53,7 @@
       <option name="presentableId" value="Default" />
       <updated>1686051844511</updated>
       <workItem from="1686051845868" duration="3533000" />
-      <workItem from="1686088599392" duration="1015000" />
+      <workItem from="1686088599392" duration="1659000" />
     </task>
     <task id="LOCAL-00001" summary="feat: Release hostinger blog theme version-1.1.0">
       <created>1686089015758</created>
@@ -62,7 +62,14 @@
       <option name="project" value="LOCAL" />
       <updated>1686089015758</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="feat: Release hostinger blog theme version-1.1.0">
+      <created>1686138176009</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1686138176009</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
