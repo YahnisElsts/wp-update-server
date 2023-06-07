@@ -4,15 +4,15 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="838b6ad2-8b89-49fd-9cbf-2593ff1dccb3" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+    <list default="true" id="838b6ad2-8b89-49fd-9cbf-2593ff1dccb3" name="Changes" comment="feat: Release hostinger blog theme version-1.1.0">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
-  <component name="ComposerSettings" doNotAsk="true" synchronizationState="SYNCHRONIZE">
+  <component name="ComposerSettings" doNotAsk="true" notifyAboutMissingVendor="false" synchronizationState="SYNCHRONIZE">
     <pharConfigPath>$PROJECT_DIR$/composer.json</pharConfigPath>
     <execution />
   </component>
@@ -53,8 +53,16 @@
       <option name="presentableId" value="Default" />
       <updated>1686051844511</updated>
       <workItem from="1686051845868" duration="3533000" />
-      <workItem from="1686088599392" duration="167000" />
+      <workItem from="1686088599392" duration="1015000" />
     </task>
+    <task id="LOCAL-00001" summary="feat: Release hostinger blog theme version-1.1.0">
+      <created>1686089015758</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1686089015758</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -70,5 +78,9 @@
         </entry>
       </map>
     </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="feat: Release hostinger blog theme version-1.1.0" />
+    <option name="LAST_COMMIT_MESSAGE" value="feat: Release hostinger blog theme version-1.1.0" />
   </component>
 </project>
