@@ -1,4 +1,5 @@
 <?php
 require __DIR__ . '/loader.php';
-$server = new Wpup_UpdateServer();
+require __DIR__ . '/MyCustomServer.php';
+$server = new MyCustomServer();
 $server->handleRequest();
