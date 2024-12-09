@@ -1,0 +1,20 @@
+name: Version Constant Check
+on:
+  release:
+    types: [created]
+
+jobs:
+  validate-version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Check Version Match
+        run: |
+          TAG_VERSION=${GITHUB_REF#refs/tags/v}
+          CODE_VERSION=$(php -r 'include "includes/Version.php"; echo Wpup_Version::VERSION;')
+          
+          if [ "$TAG_VERSION" != "$CODE_VERSION" ]; then
+            echo "Version mismatch: Tag version ($TAG_VERSION) doesn't match Version.php ($CODE_VERSION)"
+            exit 1
+          fi
