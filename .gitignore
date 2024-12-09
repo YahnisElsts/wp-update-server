@@ -1,2 +1,5 @@
 packages/*.zip
 cache/*.txt
+
+# Ignore the entire IDEA/PhpStorm directory
+.idea/
