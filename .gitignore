@@ -1,5 +1,6 @@
 packages/*.zip
 cache/*.txt
+logs/*.log
 
 # Ignore the entire IDEA/PhpStorm directory
 .idea/
