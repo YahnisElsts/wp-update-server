@@ -1,7 +1,7 @@
 name: Version Constant Check
 on:
   release:
-    types: [created]
+    types: [published]
 
 jobs:
   validate-version:
