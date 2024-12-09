@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/includes/Version.php';
 require_once __DIR__ . '/includes/Wpup/Package.php';
 require_once __DIR__ . '/includes/Wpup/ZipMetadataParser.php';
 require_once __DIR__ . '/includes/Wpup/InvalidPackageException.php';
