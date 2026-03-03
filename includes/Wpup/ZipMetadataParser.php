@@ -68,7 +68,7 @@ class Wpup_ZipMetadataParser {
 	 * @param string $filename
 	 * @param Wpup_Cache $cache
 	 */
-	public function __construct($slug, $filename, Wpup_Cache $cache = null){
+	public function __construct($slug, $filename, ?Wpup_Cache $cache = null){
 		$this->slug = $slug;
 		$this->filename = $filename;
 		$this->cache = $cache;
