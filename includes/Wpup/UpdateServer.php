@@ -385,13 +385,28 @@ class Wpup_UpdateServer {
 	) {
 		$pattern = $this->assetDirectories[$assetType] . '/' . $package->slug . $suffix;
 
+		//GLOB_BRACE is not defined on every libc (e.g. musl, used by Alpine/static
+		//FrankenPHP builds). When it's missing, fall back to one glob() call per
+		//extension and merge the results. Behaviour is identical otherwise.
 		if ( is_array($extensions) ) {
-			$extensionPattern = '{' . implode(',', $extensions) . '}';
+			if ( defined('GLOB_BRACE') ) {
+				$assets = glob(
+					$pattern . '.{' . implode(',', $extensions) . '}',
+					GLOB_BRACE | GLOB_NOESCAPE
+				);
+			} else {
+				$assets = array();
+				foreach ($extensions as $extension) {
+					$matches = glob($pattern . '.' . $extension, GLOB_NOESCAPE);
+					if ( !empty($matches) ) {
+						$assets = array_merge($assets, $matches);
+					}
+				}
+			}
 		} else {
-			$extensionPattern = $extensions;
+			$assets = glob($pattern . '.' . $extensions, GLOB_NOESCAPE);
 		}
 
-		$assets = glob($pattern . '.' . $extensionPattern, GLOB_BRACE | GLOB_NOESCAPE);
 		if ( !empty($assets) ) {
 			$firstFile = basename(reset($assets));
 			return $this->generateAssetUrl($assetType, $firstFile);
